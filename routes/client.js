@@ -13,6 +13,38 @@ router.get('/', async function (req, res, next) {
         res.status(500).send('Ошибка сервера');
     }
 });
+router.get('/:id', async function (req, res, next) {
+    const clientId = req.params.id;
+
+    try {
+        const [client] = await queries.getClientById(clientId);
+
+        if (client) {
+            res.render('clientCard', {title: 'Информация о клиенте', client});
+        } else {
+            res.status(404).send('Клиент не найден');
+        }
+    } catch (err) {
+        console.error('Ошибка:', err);
+        res.status(500).send('Ошибка сервера');
+    }
+});
+router.get('/:id/carcas', async function (req, res, next) {
+    const clientId = req.params.id;
+
+    try {
+        const [client] = await queries.getClientById(clientId);
+
+        if (client) {
+            res.render('carcas', {title: 'Информация о клиенте', client});
+        } else {
+            res.status(404).send('Клиент не найден');
+        }
+    } catch (err) {
+        console.error('Ошибка:', err);
+        res.status(500).send('Ошибка сервера');
+    }
+});
 router.post('/add', async (req, res) => {
     try{
         const {lastName, firstName, middleName, phone, email, address, managerId} = req.body;

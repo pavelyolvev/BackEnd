@@ -28,31 +28,31 @@ app.use('/', indexRouter);
 app.use('/login', loginRouter);
 app.use('/users', usersRouter);
 app.use('/client', clientRouter);
-app.use('/clientCard', clientCardRouter);
-app.use('/carcas', carcasRouter);
+// app.use('/clientCard', clientCardRouter);
+// app.use('/carcas', carcasRouter);
 
 // Маршрут для страницы каркаса клиента
-app.get('/clientCard/:clientId/carcas', (req, res) => {
-  const clientId = req.params.clientId;
+// app.get('/clientCard/:clientId/carcas', (req, res) => {
+//   const clientId = req.params.clientId;
+//
+//   // Здесь можно получить данные клиента из базы данных по clientId
+//   const client = {
+//     id: clientId,
+//     last_name: 'Иванов',
+//     first_name: 'Иван',
+//     second_name: 'Иванович',
+//     adress: 'г. Ульяновск, ул. Тестовая, д. 35-45',
+//     phone: '+7 (999) 123-45-67'
+//   };
+//
+//   // Рендерим страницу carcas.ejs с данными клиента
+//   res.render('carcas', { client });
+// });
 
-  // Здесь можно получить данные клиента из базы данных по clientId
-  const client = {
-    id: clientId,
-    last_name: 'Иванов',
-    first_name: 'Иван',
-    second_name: 'Иванович',
-    adress: 'г. Ульяновск, ул. Тестовая, д. 35-45',
-    phone: '+7 (999) 123-45-67'
-  };
-
-  // Рендерим страницу carcas.ejs с данными клиента
-  res.render('carcas', { client });
-});
-
-// Обработка ошибки 404
-app.use(function(req, res, next) {
-  next(createError(404));
-});
+// // Обработка ошибки 404
+// app.use(function(req, res, next) {
+//   next(createError(404));
+// });
 
 // Обработка ошибок
 app.use(function(err, req, res, next) {
@@ -61,12 +61,6 @@ app.use(function(err, req, res, next) {
 
   res.status(err.status || 500);
   res.render('error');
-});
-
-// Запуск сервера
-const PORT = 3000;
-app.listen(PORT, () => {
-  console.log(`Сервер запущен на http://localhost:${PORT}`);
 });
 
 module.exports = app;
