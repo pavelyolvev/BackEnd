@@ -58,10 +58,44 @@ const getClientById = async (clientId) => {
     const [results] = await db.query('SELECT * FROM customers WHERE id = ?', [clientId]);
     return results;
 };
+const getCalculations = async (clientId) => {
+    const [results] = await db.query('SELECT * FROM calculation c join calculation_state cs on c.calculation_state_id = cs.id WHERE customer_id = ?', [clientId]);
+    return results;
+};
+
+// ДОПИСАТЬ
+const addCalculation = async (clientId, address) => {
+    const number = await getCalculations(clientId).length + 1;
+    const [results] = await db.query('INSERT INTO calculation (customer_id, address_object_constractions, number, created_date, calculation_state_id) VALUES (?, ?, ?, NOW(), ?)', [clientId, address, number, 1]);
+    return results;
+}
+const addStructuralElementFrame = async (calculationId, amountFloor, floorHeight,
+                                         perimeterExtWalls, baseArea, externalWallsThickness,
+                                         internalWallThickness, internalWallLength, OSBExternalWall,
+                                         steamWaterProofingExternalWall, windscreenExternalWall,
+                                         insulationExternalWall, overlapThickness, OSBThickness,
+                                         steamWaterProofingThickness, windscreenThickness, insulationThickness,
+                                         OSBInternalWall) => {
+    const [results] = await db.query(
+        `INSERT INTO structural_element_frame (calculation_id, amount_floor, floor_number, floor_height, perimeter_of_external_walls, 
+                                               base_area, external_wall_thickness, internal_wall_thickness, 
+                                               internal_wall_length, OSB_external_wall, steam_waterproofing_external_wall, 
+                                               windscreen_extern_wall, insulation_external_wall, overlap_thickness, 
+                                               OSB_thickness, steam_waterproofing_thickness, windscreen_thickness) 
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [calculationId, amountFloor, amountFloor, floorHeight,
+            perimeterExtWalls, baseArea, externalWallsThickness,
+            internalWallThickness, internalWallLength, OSBExternalWall,
+            steamWaterProofingExternalWall, windscreenExternalWall,
+            insulationExternalWall, overlapThickness, OSBThickness,
+            steamWaterProofingThickness, windscreenThickness, insulationThickness, OSBInternalWall]);
+
+}
 
 module.exports = {
     login,
     addClient,
     getClients,
-    getClientById
+    getClientById,
+    getCalculations,
+    addCalculation
 };

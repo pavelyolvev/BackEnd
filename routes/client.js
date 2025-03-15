@@ -18,9 +18,11 @@ router.get('/:id', async function (req, res, next) {
 
     try {
         const [client] = await queries.getClientById(clientId);
+        const calculations = await queries.getCalculations(clientId);
+        console.log(calculations);
 
         if (client) {
-            res.render('clientCard', {title: 'Информация о клиенте', client});
+            res.render('clientCard', {title: 'Информация о клиенте', client, calculations});
         } else {
             res.status(404).send('Клиент не найден');
         }
