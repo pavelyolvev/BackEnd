@@ -31,21 +31,63 @@ router.get('/:id', async function (req, res, next) {
         res.status(500).send('Ошибка сервера');
     }
 });
-router.get('/:id/carcas', async function (req, res, next) {
+router.get('/:id/:calculationId/:structure', async function (req, res, next) {
     const clientId = req.params.id;
+    const calculationId = req.params.calculationId;
+    //const structure = req.params.structure;
+    const structure = 'carcas';
 
     try {
         const [client] = await queries.getClientById(clientId);
+        const [calculation] = await queries.getCalculationById(calculationId);
+        const [structureFrame] = await queries.getStructuralElementFrameByCalculationId(calculationId);
 
         if (client) {
-            res.render('carcas', {title: 'Информация о клиенте', client});
+            if(structureFrame){
+                res.render(structure, {title: 'Редактирование структуры', client, calculation, structureFrame, operation:'update'});
+            } else {
+                res.render(structure, {title: 'Создание структуры', client, calculation, operation:'add'});
+            }
+
         } else {
-            res.status(404).send('Клиент не найден');
+            res.status(404).send('Клиент или расчет не найден');
         }
     } catch (err) {
         console.error('Ошибка:', err);
         res.status(500).send('Ошибка сервера');
     }
+});
+router.post('/:id/:calculationId/:structure/add', async function (req, res, next) {
+    try{
+        const calculationId = req.params.calculationId;
+        const {amountFloor, floorHeight,
+            perimeterExtWalls, baseArea, externalWallsThickness,
+            internalWallThickness, internalWallLength, OSBExternalWall,
+            steamWaterProofingExternalWall, windscreenExternalWall,
+            insulationExternalWall, overlapThickness, OSBThickness,
+            steamWaterProofingThickness, windscreenThickness, insulationThickness,
+            OSBInternalWall} = req.body;
+
+        const result = await queries.addStructuralElementFrame(calculationId, amountFloor, floorHeight,
+            perimeterExtWalls, baseArea, externalWallsThickness,
+            internalWallThickness, internalWallLength, OSBExternalWall,
+            steamWaterProofingExternalWall, windscreenExternalWall,
+            insulationExternalWall, overlapThickness, OSBThickness,
+            steamWaterProofingThickness, windscreenThickness, insulationThickness,
+            OSBInternalWall);
+
+        if (result.affectedRows > 0) {  // Если была добавлена хотя бы одна строка
+            res.json({ success: true, message: 'Структурный элемент успешно добавлен!' });
+        } else {
+            res.json({ success: false, message: 'Не удалось добавить структурный элемент.' });
+        }
+    } catch (err) {
+        console.error('Ошибка:', err);
+        res.status(500).send('Ошибка сервера');
+    }
+});
+router.post('/:id/:calculationId/:structure/update', async function (req, res, next) {
+
 });
 router.post('/add', async (req, res) => {
     try{

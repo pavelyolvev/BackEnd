@@ -62,6 +62,14 @@ const getCalculations = async (clientId) => {
     const [results] = await db.query('SELECT * FROM calculation c join calculation_state cs on c.calculation_state_id = cs.id WHERE customer_id = ?', [clientId]);
     return results;
 };
+const getCalculationById = async (calculationId) => {
+    const [results] = await db.query('SELECT * FROM calculation c join calculation_state cs on c.calculation_state_id = cs.id WHERE c.id = ?', [calculationId]);
+    return results;
+};
+const getStructuralElementFrameByCalculationId = async (calculationId) => {
+    const [results] = await db.query('SELECT * FROM structural_element_frame WHERE calculation_id = ?', [calculationId]);
+    return results
+}
 
 // ДОПИСАТЬ
 const addCalculation = async (clientId, address) => {
@@ -76,13 +84,15 @@ const addStructuralElementFrame = async (calculationId, amountFloor, floorHeight
                                          insulationExternalWall, overlapThickness, OSBThickness,
                                          steamWaterProofingThickness, windscreenThickness, insulationThickness,
                                          OSBInternalWall) => {
+    // КОЛИЧЕСТВО ЭТАЖЕЙ = НОМЕРУ ЭТАЖА
+    // ИСПРАВИТЬ В БУДУЩЕМ
     const [results] = await db.query(
         `INSERT INTO structural_element_frame (calculation_id, amount_floor, floor_number, floor_height, perimeter_of_external_walls, 
                                                base_area, external_wall_thickness, internal_wall_thickness, 
                                                internal_wall_length, OSB_external_wall, steam_waterproofing_external_wall, 
                                                windscreen_extern_wall, insulation_external_wall, overlap_thickness, 
-                                               OSB_thickness, steam_waterproofing_thickness, windscreen_thickness) 
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [calculationId, amountFloor, amountFloor, floorHeight,
+                                               OSB_thickness, steam_waterproofing_thickness, windscreen_thickness, insulation_thickness, OSB_internal_wall) 
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [calculationId, amountFloor, amountFloor, floorHeight,
             perimeterExtWalls, baseArea, externalWallsThickness,
             internalWallThickness, internalWallLength, OSBExternalWall,
             steamWaterProofingExternalWall, windscreenExternalWall,
@@ -97,5 +107,8 @@ module.exports = {
     getClients,
     getClientById,
     getCalculations,
+    getCalculationById,
+    getStructuralElementFrameByCalculationId,
+    addStructuralElementFrame,
     addCalculation
 };
