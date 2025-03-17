@@ -73,8 +73,18 @@ const getStructuralElementFrameByCalculationId = async (calculationId) => {
 
 // ДОПИСАТЬ
 const addCalculation = async (clientId, address) => {
-    const number = await getCalculations(clientId).length + 1;
-    const [results] = await db.query('INSERT INTO calculation (customer_id, address_object_constractions, number, created_date, calculation_state_id) VALUES (?, ?, ?, NOW(), ?)', [clientId, address, number, 1]);
+    const [countResult] = await db.query(
+        `SELECT COUNT(*) AS count FROM calculation WHERE customer_id = ?`,
+        [clientId]
+    );
+
+    const number = countResult[0].count + 1;
+    const [results] = await db.query(
+        `INSERT INTO calculation (customer_id, address_object_constractions, number, created_date, calculation_state_id)
+   VALUES (?, ?, ?, NOW(), ?)`,
+        [clientId, address, number, 1]
+    );
+
     return results;
 }
 const addStructuralElementFrame = async (calculationId, amountFloor, floorHeight,

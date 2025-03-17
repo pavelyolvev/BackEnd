@@ -31,6 +31,7 @@ router.get('/:id', async function (req, res, next) {
         res.status(500).send('Ошибка сервера');
     }
 });
+
 router.get('/:id/:calculationId/:structure', async function (req, res, next) {
     const clientId = req.params.id;
     const calculationId = req.params.calculationId;
@@ -97,6 +98,24 @@ router.post('/add', async (req, res) => {
 
         if (result.affectedRows > 0) {  // Если была добавлена хотя бы одна строка
             res.json({ success: true, message: 'Клиент успешно добавлен!' });
+        } else {
+            res.json({ success: false, message: 'Не удалось добавить клиента.' });
+        }
+    } catch (err) {
+        console.error('Ошибка:', err);
+        res.status(500).send('Ошибка сервера');
+    }
+
+});
+router.post('/:id/calculation/add', async (req, res) => {
+    try{
+        const clientId = req.params.id;
+
+        const result = await queries.addCalculation(clientId, "Введите адрес");
+
+
+        if (result.affectedRows > 0) {  // Если была добавлена хотя бы одна строка
+            res.json({ success: true, result });
         } else {
             res.json({ success: false, message: 'Не удалось добавить клиента.' });
         }
