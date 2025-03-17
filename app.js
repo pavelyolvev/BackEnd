@@ -12,45 +12,20 @@ var clientRouter = require('./routes/client');
 var app = express();
 
 // Настройка EJS
-app.set('views', path.join(__dirname, '/FrontEnd/views'));
+app.set('views', path.join(__dirname, '../FrontEnd/views'));
 app.set('view engine', 'ejs');
 
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, '/FrontEnd/public')));
+app.use(express.static(path.join(__dirname, '../FrontEnd/public')));
 
 // Маршруты
 app.use('/', indexRouter);
 app.use('/login', loginRouter);
 app.use('/users', usersRouter);
 app.use('/client', clientRouter);
-// app.use('/clientCard', clientCardRouter);
-// app.use('/carcas', carcasRouter);
-
-// Маршрут для страницы каркаса клиента
-// app.get('/clientCard/:clientId/carcas', (req, res) => {
-//   const clientId = req.params.clientId;
-//
-//   // Здесь можно получить данные клиента из базы данных по clientId
-//   const client = {
-//     id: clientId,
-//     last_name: 'Иванов',
-//     first_name: 'Иван',
-//     second_name: 'Иванович',
-//     adress: 'г. Ульяновск, ул. Тестовая, д. 35-45',
-//     phone: '+7 (999) 123-45-67'
-//   };
-//
-//   // Рендерим страницу carcas.ejs с данными клиента
-//   res.render('carcas', { client });
-// });
-
-// // Обработка ошибки 404
-// app.use(function(req, res, next) {
-//   next(createError(404));
-// });
 
 // Обработка ошибок
 app.use(function(err, req, res, next) {
