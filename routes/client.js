@@ -19,6 +19,7 @@ router.get('/:id', async function (req, res, next) {
     try {
         const [client] = await queries.getClientById(clientId);
         const calculations = await queries.getCalculations(clientId);
+
         console.log(calculations);
 
         if (client) {
@@ -87,8 +88,24 @@ router.post('/:id/:calculationId/:structure/add', async function (req, res, next
         res.status(500).send('Ошибка сервера');
     }
 });
-router.post('/:id/:calculationId/:structure/update', async function (req, res, next) {
+router.post('/:id/:calculationId/updateAddress', async function (req, res, next) {
 
+    try{
+        const calculationId = req.params.calculationId;
+        const clientId = req.params.id;
+        const {address} = req.body;
+        console.log(address);
+        const result = await queries.saveCalculationAddress(calculationId, address);
+
+        if (result.affectedRows > 0) {  // Если была добавлена хотя бы одна строка
+            res.json({ success: true, message: 'Адрес обновлен!' });
+        } else {
+            res.json({ success: false, message: 'Не удалось обновить адрес.' });
+        }
+    } catch (err) {
+        console.error('Ошибка:', err);
+        res.status(500).send('Ошибка сервера');
+    }
 });
 router.post('/add', async (req, res) => {
     try{

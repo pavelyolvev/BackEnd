@@ -59,7 +59,19 @@ const getClientById = async (clientId) => {
     return results;
 };
 const getCalculations = async (clientId) => {
-    const [results] = await db.query('SELECT * FROM calculation c join calculation_state cs on c.calculation_state_id = cs.id WHERE customer_id = ?', [clientId]);
+    const [results] = await db.query(`
+        SELECT 
+            calculation.id AS calculation_id,
+            calculation.customer_id,
+            calculation.address_object_constractions,
+            calculation.number,
+            calculation.created_date,
+            calculation.calculation_state_id,
+            calculation_state.status
+        FROM calculation 
+        JOIN calculation_state ON calculation.calculation_state_id = calculation_state.id 
+        WHERE calculation.customer_id = ?
+    `, [clientId]);
     return results;
 };
 const getCalculationById = async (calculationId) => {
@@ -111,6 +123,11 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [calculationI
 
 }
 
+const saveCalculationAddress = async (calculationId, address) => {
+    const [results] = await db.query('UPDATE calculation SET address_object_constractions = ? WHERE id = ?', [address, calculationId]);
+    return results
+}
+
 module.exports = {
     login,
     addClient,
@@ -120,5 +137,6 @@ module.exports = {
     getCalculationById,
     getStructuralElementFrameByCalculationId,
     addStructuralElementFrame,
-    addCalculation
+    addCalculation,
+    saveCalculationAddress
 };
