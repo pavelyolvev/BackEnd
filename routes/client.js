@@ -2,6 +2,7 @@ var express = require('express');
 var router = express.Router();
 const db = require('../db');
 const queries = require('../queries');
+const calculation = require('../calculation');
 
 /* GET home page. */
 router.get('/', async function (req, res, next) {
@@ -102,6 +103,27 @@ router.post('/:id/:calculationId/updateAddress', async function (req, res, next)
         } else {
             res.json({ success: false, message: 'Не удалось обновить адрес.' });
         }
+    } catch (err) {
+        console.error('Ошибка:', err);
+        res.status(500).send('Ошибка сервера');
+    }
+});
+router.post('/:id/:calculationId/saveCarcasData', async function (req, res, next) {
+
+    try{
+        const calculationId = req.params.calculationId;
+        const clientId = req.params.id;
+        const data = req.body;
+        console.log(data);
+
+        const result = await calculation.recoginzeAndCalculate(data);
+        //const result = await queries.saveCalculationAddress(calculationId, address);
+
+        // if (result.affectedRows > 0) {  // Если была добавлена хотя бы одна строка
+        //     res.json({ success: true, message: 'Адрес обновлен!' });
+        // } else {
+        //     res.json({ success: false, message: 'Не удалось обновить адрес.' });
+        // }
     } catch (err) {
         console.error('Ошибка:', err);
         res.status(500).send('Ошибка сервера');
