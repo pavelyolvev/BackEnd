@@ -116,7 +116,7 @@ router.post('/:id/:calculationId/saveCarcasData', async function (req, res, next
         const data = req.body;
         console.log(data);
 
-        const result = await calculation.recoginzeAndCalculate(data);
+        const result = await calculation.recognizeAndCalculate(data);
         //const result = await queries.saveCalculationAddress(calculationId, address);
 
         // if (result.affectedRows > 0) {  // Если была добавлена хотя бы одна строка
