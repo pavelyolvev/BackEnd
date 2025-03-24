@@ -1,5 +1,8 @@
 const queries = require('./queries');
 
+function roundToFixed(num, places) {
+    return Number((num).toFixed(places)); //
+}
 function recognizeAndCalculate(data) {
     console.log(data);
 
@@ -41,7 +44,7 @@ function recognizeAndCalculate(data) {
         const woodForOpenings = Math.ceil((woodWindows + woodExternalDoors) / 3);
         const woodForOuterWall = woodForOuterHolders + woodForSq + woodForOpenings;
         const woodThickness = data.floors[i].wallThickness;
-        const sqInsulationOuterWalls = sqOuterWalls * 1.1 - (sqWindows + sqExternalDoors);
+        const sqInsulationOuterWalls = roundToFixed(sqOuterWalls * 1.1 - (sqWindows + sqExternalDoors), 2);
 
         const woodForInnerWall = Math.ceil(data.floors[i].innerWallLength / 0.6);
         const woodForInnerWallOpenings = Math.ceil(woodInternalDoors / 3);
@@ -67,30 +70,30 @@ function recognizeAndCalculate(data) {
                 woodForOpenings,
                 woodForOuterWall,
                 woodThickness,
-                woodForOuterWallVolume: woodForOuterWall * 0.05 * 3 * woodThickness/1000,
-                sqOSB: sqOuterWalls * 2 * 1.15,
-                sqSteamWaterProofAndWindscreen: sqOuterWalls * 1.15,
+                woodForOuterWallVolume: roundToFixed(woodForOuterWall * 0.05 * 3 * woodThickness/1000, 2),
+                sqOSB: roundToFixed(sqOuterWalls * 2 * 1.15, 2),
+                sqSteamWaterProofAndWindscreen: roundToFixed(sqOuterWalls * 1.15, 2),
                 sqInsulationOuterWalls,
                 insulationThickness: woodThickness,
-                insulationVolume: sqInsulationOuterWalls * woodThickness/1000,
+                insulationVolume: roundToFixed(sqInsulationOuterWalls * woodThickness/1000, 2),
             },
             innerWalls: {
                 woodForInnerWall,
                 woodForInnerWallOpenings,
                 woodForInnerWallSum,
                 innerWallThickness: data.floors[i].innerWallThickness,
-                innerWallVolume: woodForInnerWallSum * data.floors[i].innerWallThickness / 1000 * 3 * 0.05,
-                sqOSBInnerWall: sqInnerWalls * 2 * 1.15,
+                innerWallVolume: roundToFixed(woodForInnerWallSum * data.floors[i].innerWallThickness / 1000 * 3 * 0.05, 2),
+                sqOSBInnerWall: roundToFixed(sqInnerWalls * 2 * 1.15, 2),
             },
             overlaps: {
                 wood: woodOverlap,
                 woodThickness: woodOverlapThickness,
-                woodVolume: woodOverlap * woodOverlapThickness / 1000 * 6 * 0.05,
-                sqOSB: data.floors[i].baseArea * 2 * 1.15 * numOfFloors,
-                sqSteamWaterProofAndWindscreen: data.floors[i].baseArea * 1.15,
-                sqInsulation: data.floors[i].baseArea * numOfFloors * 1.1,
+                woodVolume: roundToFixed(woodOverlap * woodOverlapThickness / 1000 * 6 * 0.05, 2),
+                sqOSB: roundToFixed(data.floors[i].baseArea * 2 * 1.15 * numOfFloors, 2),
+                sqSteamWaterProofAndWindscreen: roundToFixed(data.floors[i].baseArea * 1.15, 2),
+                sqInsulation: roundToFixed(data.floors[i].baseArea * numOfFloors * 1.1, 2),
                 insulationThickness: woodOverlapThickness,
-                insulationVolume: data.floors[i].baseArea * numOfFloors * 1.1 * woodOverlapThickness / 1000,
+                insulationVolume: roundToFixed(data.floors[i].baseArea * numOfFloors * 1.1 * woodOverlapThickness / 1000, 2),
             },
         };
 
