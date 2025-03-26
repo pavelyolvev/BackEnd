@@ -3,8 +3,13 @@ const queries = require('./queries');
 function roundToFixed(num, places) {
     return Number((num).toFixed(places)); //
 }
+
+function saveSourceDataToDB(data) {
+
+}
 function recognizeAndCalculate(data) {
-    console.log(data);
+    //console.log(data);
+
 
     const results = [];
 
@@ -36,8 +41,8 @@ function recognizeAndCalculate(data) {
 
         const numOfFloors = i === 0 ? 2 : 1;
 
-        const sqOuterWalls = data.floors[i].perimeter * data.floors[i].height * data.floors.length;
-        const sqInnerWalls = data.floors[i].innerWallLength * data.floors[i].height * data.floors.length;
+        const sqOuterWalls = data.floors[i].perimeter * data.floors[i].height;
+        const sqInnerWalls = data.floors[i].innerWallLength * data.floors[i].height;
 
         const woodForOuterHolders = Math.ceil(data.floors[i].perimeter / 0.6 + 1);
         const woodForSq = data.floors[i].perimeter * 2 / 3;

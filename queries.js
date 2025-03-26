@@ -54,6 +54,94 @@ const addClient = async (secondname, name, lastname, phone, email, adress, manag
     );
     return results;
 };
+const saveSourceData = async (clientId, data) => {
+    const connection = await db.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        // 1. Insert into calculation - работает
+        const [countResult] = await connection.query(
+            `SELECT COUNT(*) AS count FROM calculation WHERE customer_id = ?`,
+            [clientId]
+        );
+        const number = countResult[0].count + 1;
+
+        const [calcResult] = await connection.execute(
+            `INSERT INTO calculation (customer_id, address_object_constractions, number, created_date, calculation_state_id)
+             VALUES (?, ?, ?, NOW(), ?)`,
+            [clientId, data.address, number, 1]
+        );
+
+        const calculationId = calcResult.insertId;
+
+        // 2. Loop through floors
+        for (const floor of data.floors) {
+            const [frameResult] = await connection.execute(
+                `INSERT INTO structural_element_frame (
+                    amount_floor, floor_number, floor_height, perimeter_of_external_walls,
+                    base_area, external_wall_thickness, internal_wall_length, internal_wall_thickness,
+                    OSB_external_wall, steam_waterproofing_external_wall, windscreen_extern_wall,
+                    insulation_external_wall, overlap_thickness, OSB_thickness,
+                    steam_waterproofing_thickness, windscreen_thickness, insulation_thickness, OSB_internal_wall,
+                    calculation_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [
+                    data.floors.length,
+                    floor.floorNumber,
+                    floor.height,
+                    floor.perimeter,
+                    floor.baseArea,
+                    floor.wallThickness,
+                    floor.innerWallLength,
+                    floor.innerWallThickness,
+                    floor.externalWallSheathing?.osb ?? null,
+                    floor.externalWallSheathing?.vaporBarrier ?? null,
+                    floor.externalWallSheathing?.windProtection ?? null,
+                    floor.externalWallSheathing?.insulation ?? null,
+                    floor.overlaps?.floorThickness ?? null,
+                    floor.overlaps?.osb ?? null,
+                    floor.overlaps?.vaporBarrier ?? null,
+                    floor.overlaps?.windProtection ?? null,
+                    floor.overlaps?.insulation ?? null,
+                    floor.innerWallSheathing?.osb ?? null,
+                    calculationId,
+                ]
+            );
+            const frameId = frameResult.insertId;
+
+            // Вставка окон и дверей
+            async function insertOpenings(openingsArray, type) {
+                for (const opening of openingsArray) {
+                    const [openingResult] = await connection.execute(
+                        `INSERT INTO openings (type, width, height) VALUES (?, ?, ?)`,
+                        [type, opening.width ?? null, opening.height ?? null]
+                    );
+
+                    const openingId = openingResult.insertId;
+
+                    await connection.execute(
+                        `INSERT INTO openings_in_a_structural_element_frame (structural_element_frame_id, openings_id, amount)
+                         VALUES (?, ?, ?)`,
+                        [frameId, openingId, opening.count]
+                    );
+                }
+            }
+
+            await insertOpenings(floor.windows, 'window');
+            await insertOpenings(floor.externalDoors, 'externalDoor');
+            await insertOpenings(floor.internalDoors, 'internalDoor');
+        }
+
+        await connection.commit();
+        console.log('Данные успешно добавлены.');
+    } catch (err) {
+        await connection.rollback();
+        console.error('Ошибка во время вставки:', err);
+    } finally {
+        connection.release();
+    }
+};
+
 const getClientById = async (clientId) => {
     const [results] = await db.query('SELECT * FROM customers WHERE id = ?', [clientId]);
     return results;
@@ -138,5 +226,6 @@ module.exports = {
     getStructuralElementFrameByCalculationId,
     addStructuralElementFrame,
     addCalculation,
-    saveCalculationAddress
+    saveCalculationAddress,
+    saveSourceData
 };

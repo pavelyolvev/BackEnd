@@ -116,6 +116,8 @@ router.post('/:id/:calculationId/saveCarcasData', async function (req, res, next
         const data = req.body;
         console.log(data);
 
+        const SaveResult = await queries.saveSourceData(clientId, data);
+        console.log(SaveResult);
         const result = await calculation.recognizeAndCalculate(data);
         //const result = await queries.saveCalculationAddress(calculationId, address);
 
