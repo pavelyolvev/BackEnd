@@ -111,14 +111,26 @@ router.post('/:id/:calculationId/updateAddress', async function (req, res, next)
 router.post('/:id/:calculationId/saveCarcasData', async function (req, res, next) {
 
     try{
-        const calculationId = req.params.calculationId;
+        let calculationId = req.params.calculationId;
         const clientId = req.params.id;
         const data = req.body;
         console.log(data);
 
-        const SaveResult = await queries.saveSourceData(clientId, data);
-        console.log(SaveResult);
-        const result = await calculation.recognizeAndCalculate(data);
+        if(calculationId === 'new'){
+            calculationId = await queries.saveSourceData(clientId, data);
+        } else {
+            // Реализовать обновление данных
+            // const result await queries.updateSourceData(clientId, data);
+            // if(result.affectedRows > 0){
+            // return res.json({ success: true, message: 'Данные успешно обновлены!' });
+        }
+
+        //const result = await calculation.recognizeAndCalculate(calculationId);
+        // const result = calculation.recognizeAndCalculate(data);
+        // if (result){
+        // }
+
+        res.json({ success: true, calculationId: calculationId });
         //const result = await queries.saveCalculationAddress(calculationId, address);
 
         // if (result.affectedRows > 0) {  // Если была добавлена хотя бы одна строка

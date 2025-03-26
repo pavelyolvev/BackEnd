@@ -105,6 +105,7 @@ function recognizeAndCalculate(data) {
         results.push(resultForFloor);
     }
     console.log(results);
+    return results;
 }
 
 

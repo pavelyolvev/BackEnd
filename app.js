@@ -8,6 +8,7 @@ var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var loginRouter = require('./routes/login');
 var clientRouter = require('./routes/client');
+var resultRouter = require('./routes/result');
 
 var app = express();
 
@@ -26,6 +27,7 @@ app.use('/', indexRouter);
 app.use('/login', loginRouter);
 app.use('/users', usersRouter);
 app.use('/client', clientRouter);
+app.use('/client/:id/:calculationId/:structure/result', resultRouter);
 
 // Обработка ошибок
 app.use(function(err, req, res, next) {

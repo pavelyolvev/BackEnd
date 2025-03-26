@@ -134,6 +134,7 @@ const saveSourceData = async (clientId, data) => {
 
         await connection.commit();
         console.log('Данные успешно добавлены.');
+        return calculationId;
     } catch (err) {
         await connection.rollback();
         console.error('Ошибка во время вставки:', err);
