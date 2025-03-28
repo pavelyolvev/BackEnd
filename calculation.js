@@ -77,8 +77,12 @@ function recognizeAndCalculate(data) {
                 woodThickness,
                 woodForOuterWallVolume: roundToFixed(woodForOuterWall * 0.05 * 3 * woodThickness/1000, 2),
                 sqOSB: roundToFixed(sqOuterWalls * 2 * 1.15, 2),
+                steamWaterProofName: data.floors[i].externalWallSheathing.vaporBarrier,
+                windscreenName: data.floors[i].externalWallSheathing.windProtection,
                 sqSteamWaterProofAndWindscreen: roundToFixed(sqOuterWalls * 1.15, 2),
                 sqInsulationOuterWalls,
+                insulationName: data.floors[i].externalWallSheathing.insulation,
+                OSBThickness: data.floors[i].externalWallSheathing.osb,
                 insulationThickness: woodThickness,
                 insulationVolume: roundToFixed(sqInsulationOuterWalls * woodThickness/1000, 2),
             },
@@ -89,10 +93,15 @@ function recognizeAndCalculate(data) {
                 innerWallThickness: data.floors[i].innerWallThickness,
                 innerWallVolume: roundToFixed(woodForInnerWallSum * data.floors[i].innerWallThickness / 1000 * 3 * 0.05, 2),
                 sqOSBInnerWall: roundToFixed(sqInnerWalls * 2 * 1.15, 2),
+                OSBThickness: data.floors[i].innerWallSheathing.osb,
             },
             overlaps: {
                 wood: woodOverlap,
                 woodThickness: woodOverlapThickness,
+                insulationName: data.floors[i].overlaps.insulation,
+                OSBThickness: data.floors[i].overlaps.osb,
+                steamWaterProofName: data.floors[i].overlaps.vaporBarrier,
+                windscreenName: data.floors[i].overlaps.windProtection,
                 woodVolume: roundToFixed(woodOverlap * woodOverlapThickness / 1000 * 6 * 0.05, 2),
                 sqOSB: roundToFixed(data.floors[i].baseArea * 2 * 1.15 * numOfFloors, 2),
                 sqSteamWaterProofAndWindscreen: roundToFixed(data.floors[i].baseArea * 1.15, 2),
@@ -107,7 +116,6 @@ function recognizeAndCalculate(data) {
     console.log(results);
     return results;
 }
-
 
 module.exports = {
     recognizeAndCalculate

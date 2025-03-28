@@ -147,6 +147,11 @@ const getClientById = async (clientId) => {
     const [results] = await db.query('SELECT * FROM customers WHERE id = ?', [clientId]);
     return results;
 };
+
+const getUserByClientId = async (clientId) => {
+    const [results] = await db.query('SELECT u.first_name, u.last_name, s.status  FROM users u JOIN customers c ON u.id = c.users_id JOIN state s ON s.id = u.state_id WHERE c.id = ?;', [clientId]);
+    return results;
+};
 const getCalculations = async (clientId) => {
     const [results] = await db.query(`
         SELECT 
@@ -168,10 +173,219 @@ const getCalculationById = async (calculationId) => {
     return results;
 };
 const getStructuralElementFrameByCalculationId = async (calculationId) => {
-    const [results] = await db.query('SELECT * FROM structural_element_frame WHERE calculation_id = ?', [calculationId]);
-    return results
+    //const [results] = await db.query('SELECT sef.*, o.type AS opening_type, o.width AS opening_width, o.height AS opening_height, oisef.amount AS opening_amount FROM structural_element_frame sef LEFT JOIN openings_in_a_structural_element_frame oisef ON sef.id = oisef.structural_element_frame_id LEFT JOIN openings o ON oisef.openings_id = o.id WHERE sef.calculation_id = 9', [calculationId]);
+
+        const query = `
+    SELECT 
+      sef.id,
+      sef.calculation_id,
+      sef.amount_floor,
+      sef.floor_number,
+      sef.floor_number,
+      sef.perimeter_of_external_walls,
+      sef.base_area,
+      sef.external_wall_thickness,
+      sef.internal_wall_length,
+      sef.internal_wall_thickness,
+      sef.OSB_external_wall,
+      sef.steam_waterproofing_external_wall,
+      sef.windscreen_extern_wall,
+      sef.insulation_external_wall,
+      sef.overlap_thickness,
+      sef.OSB_thickness,
+      sef.steam_waterproofing_thickness,
+      sef.windscreen_thickness,
+      sef.insulation_thickness,
+      sef.OSB_internal_wall,
+    
+      (
+        SELECT JSON_ARRAYAGG(JSON_OBJECT(
+          'id', o.id,
+          'type', o.type,
+          'width', o.width,
+          'height', o.height,
+          'amount', oisef.amount
+        ))
+        FROM openings_in_a_structural_element_frame oisef
+        JOIN openings o ON o.id = oisef.openings_id
+        WHERE oisef.structural_element_frame_id = sef.id AND o.type = 'window'
+      ) AS windows,
+    
+      (
+        SELECT JSON_ARRAYAGG(JSON_OBJECT(
+          'id', o.id,
+          'type', o.type,
+          'width', o.width,
+          'height', o.height,
+          'amount', oisef.amount
+        ))
+        FROM openings_in_a_structural_element_frame oisef
+        JOIN openings o ON o.id = oisef.openings_id
+        WHERE oisef.structural_element_frame_id = sef.id AND o.type = 'externalDoor'
+      ) AS externalDoors,
+    
+      (
+        SELECT JSON_ARRAYAGG(JSON_OBJECT(
+          'id', o.id,
+          'type', o.type,
+          'width', o.width,
+          'height', o.height,
+          'amount', oisef.amount
+        ))
+        FROM openings_in_a_structural_element_frame oisef
+        JOIN openings o ON o.id = oisef.openings_id
+        WHERE oisef.structural_element_frame_id = sef.id AND o.type = 'internalDoor'
+      ) AS internalDoors
+    
+    FROM structural_element_frame sef
+    WHERE sef.calculation_id = ?;
+    `;
+    const [rows] = await db.query(query, [calculationId]);
+
+    const results = rows.map(row => ({
+        ...row,
+        windows: row.windows ?? [],
+        externalDoors: row.externalDoors ?? [],
+        internalDoors: row.internalDoors ?? [],
+    }));
+
+    //console.log(results);
+
+    return results;
 }
 
+const saveResults = async (result, calculationId) => {
+    const connection = await db.getConnection(); // Получаем соединение
+
+    const calculation = await getStructuralElementFrameByCalculationId(calculationId);
+
+    try {
+        await connection.beginTransaction(); // Начинаем транзакцию
+
+        for (const [i, floor] of result.entries()) {
+            const structural_element_frame_id = calculation[i].id;
+
+            // Внешние стены
+            await saveMaterialToResults(connection, 'Доска', floor.outerWalls.woodForOuterWallVolume, floor.outerWalls.woodThickness, 'externalWall', structural_element_frame_id);
+            await saveMaterialToResults(connection, floor.outerWalls.insulationName, floor.outerWalls.insulationVolume, floor.outerWalls.insulationThickness, 'externalWall', structural_element_frame_id);
+            await saveMaterialToResults(connection, 'OSB', floor.outerWalls.sqOSB, floor.outerWalls.OSBThickness, 'externalWall', structural_element_frame_id);
+            await saveMaterialToResults(connection, floor.outerWalls.steamWaterProofName, floor.outerWalls.sqSteamWaterProofAndWindscreen, null, 'externalWall', structural_element_frame_id);
+            await saveMaterialToResults(connection, floor.outerWalls.windscreenName, floor.outerWalls.sqSteamWaterProofAndWindscreen, null, 'externalWall', structural_element_frame_id);
+
+            // Внутренние стены
+            await saveMaterialToResults(connection, 'Доска', floor.innerWalls.innerWallVolume, floor.innerWalls.innerWallThickness, 'internalWall', structural_element_frame_id);
+            await saveMaterialToResults(connection, 'OSB', floor.innerWalls.sqOSBInnerWall, floor.innerWalls.OSBThickness, 'internalWall', structural_element_frame_id);
+
+            // Перекрытия
+            await saveMaterialToResults(connection, 'Доска', floor.overlaps.woodVolume, floor.overlaps.woodThickness, 'overlaps', structural_element_frame_id);
+            await saveMaterialToResults(connection, floor.overlaps.insulationName, floor.overlaps.insulationVolume, floor.overlaps.insulationThickness, 'overlaps', structural_element_frame_id);
+            await saveMaterialToResults(connection, 'OSB', floor.overlaps.sqOSB, floor.overlaps.OSBThickness, 'overlaps', structural_element_frame_id);
+            await saveMaterialToResults(connection, floor.overlaps.steamWaterProofName, floor.overlaps.sqSteamWaterProofAndWindscreen, null, 'overlaps', structural_element_frame_id);
+            await saveMaterialToResults(connection, floor.overlaps.windscreenName, floor.overlaps.sqSteamWaterProofAndWindscreen, null, 'overlaps', structural_element_frame_id);
+        }
+
+        await connection.commit(); // Фиксируем изменения
+        console.log("Все записи успешно вставлены.");
+        return calculationId;
+    } catch (error) {
+        await connection.rollback(); // Откат изменений в случае ошибки
+        console.error("Ошибка при сохранении результатов, транзакция отменена:", error);
+        throw error;
+    } finally {
+        connection.release(); // Освобождаем соединение
+    }
+};
+
+
+async function getLatestPriceForMaterial(connection, name, width) {
+    // запрос не учитывает длину доски
+    let priceQuery = `
+        SELECT pl.selling_price
+        FROM price_lists pl
+        JOIN material_characteristics mc ON pl.material_characteristics_id = mc.id
+        WHERE mc.name = ?
+    `;
+
+    if (name === 'Доска') {
+        priceQuery += ' AND mc.wedth = ?';
+    } else if (width) {
+        priceQuery += ' AND mc.thickness = ?';
+    }
+
+    priceQuery += `
+        ORDER BY pl.date DESC
+        LIMIT 1;
+    `;
+
+
+    try {
+        const [rows] = await connection.query(priceQuery, [name, width]);
+        return rows.length > 0 ? rows[0].selling_price : null;
+    } catch (error) {
+        console.error(`Ошибка при получении цены для ${name}:`, error);
+        throw error;
+    }
+}
+
+async function saveMaterialToResults(connection, name, amount, width, structuralType, structural_element_frame_id) {
+    const price = await getLatestPriceForMaterial(connection, name, width);
+    if (price === null) {
+        throw new Error(`Цена для материала ${name}, ${width} не найдена.`);
+    }
+
+    const fullPrice = price * amount;
+    let materialName;
+    if (name === 'Доска'){
+        materialName = structuralType === 'overlaps' ? `Доска 50*${width}*6000` : `Доска 50*${width}*3000`;
+    } else if (name === 'OSB') {
+        materialName = `${name} ${width} мм`;
+    } else materialName = name;
+
+    let query = `
+        INSERT INTO results (material_characteristics_id, material, amount, price, measurement_unit_id, full_price,
+                             structural_element_frame_id, structural_type)
+        SELECT mc.id, ?, ?, ?, ?, ?, ?, ?
+        FROM material_characteristics mc
+        WHERE mc.name = ?
+    `;
+    if (name === 'Доска'){
+        query += ' AND mc.wedth = ?'
+        if (structuralType === 'overlaps')
+            query += ' AND mc.length = 6000;'
+        else query += ' AND mc.length = 3000;'
+    } else if (name === 'OSB'){
+        query += ' AND mc.thickness = ?;'
+    }
+    else query += ';'
+
+
+    try {
+        const [rows] = await connection.query(query, [materialName, amount, price, 3, fullPrice, structural_element_frame_id, structuralType, name, width]);
+        console.log(`Запись успешно вставлена: ${materialName}`);
+        return rows;
+    } catch (error) {
+        console.error('Ошибка при вставке материала:', materialName, error);
+        throw error;
+    }
+}
+
+const getResultsByCalculationId = async (calculationId) => {
+    const query = `
+        SELECT r.id, r.material, r.amount, r.price, mu.measurement_units_name, 
+               r.full_price, r.structural_element_frame_id, r.structural_type, 
+               sef.amount_floor, sef.floor_number 
+        FROM results r JOIN measurement_units mu ON r.measurement_unit_id = mu.id
+        JOIN structural_element_frame sef ON r.structural_element_frame_id = sef.id
+        WHERE sef.calculation_id = ?;
+    `;
+    try {
+        const [rows] = await db.query(query, [calculationId]);
+        return rows;
+    } catch (error) {
+        console.error('Ошибка при получении результатов:', error);
+        throw error;
+    }
+}
 // ДОПИСАТЬ
 const addCalculation = async (clientId, address) => {
     const [countResult] = await db.query(
@@ -211,7 +425,6 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [calculationI
             steamWaterProofingThickness, windscreenThickness, insulationThickness, OSBInternalWall]);
 
 }
-
 const saveCalculationAddress = async (calculationId, address) => {
     const [results] = await db.query('UPDATE calculation SET address_object_constractions = ? WHERE id = ?', [address, calculationId]);
     return results
@@ -222,11 +435,14 @@ module.exports = {
     addClient,
     getClients,
     getClientById,
+    getUserByClientId,
     getCalculations,
     getCalculationById,
     getStructuralElementFrameByCalculationId,
     addStructuralElementFrame,
     addCalculation,
     saveCalculationAddress,
-    saveSourceData
+    saveSourceData,
+    saveResults,
+    getResultsByCalculationId
 };

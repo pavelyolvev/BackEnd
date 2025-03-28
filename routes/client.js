@@ -43,11 +43,12 @@ router.get('/:id/:calculationId/:structure', async function (req, res, next) {
     try {
         const [client] = await queries.getClientById(clientId);
         const [calculation] = await queries.getCalculationById(calculationId);
-        const [structureFrame] = await queries.getStructuralElementFrameByCalculationId(calculationId);
+        const floorsData = await queries.getStructuralElementFrameByCalculationId(calculationId);
 
+        console.log(floorsData);
         if (client) {
-            if(structureFrame){
-                res.render(structure, {title: 'Редактирование структуры', client, calculation, structureFrame, operation:'update'});
+            if(floorsData){
+                res.render(structure, {title: 'Редактирование структуры', client, calculation, floorsData: floorsData, operation:'update'});
             } else {
                 res.render(structure, {title: 'Создание структуры', client, calculation, operation:'add'});
             }
@@ -89,6 +90,27 @@ router.post('/:id/:calculationId/:structure/add', async function (req, res, next
         res.status(500).send('Ошибка сервера');
     }
 });
+
+router.get('/:id/:calculationId/:structure/result', async function (req, res, next) {
+    const clientId = req.params.id;
+    const calculationId = req.params.calculationId;
+
+    try {
+        const [client] = await queries.getClientById(clientId);
+        const [user] = await queries.getUserByClientId(clientId);
+        const [calculation] = await queries.getCalculationById(calculationId);
+        const results = await queries.getResultsByCalculationId(calculationId);
+
+        res.render('calculation', {client, calculation, results, user});
+    } catch (err) {
+        console.error('Ошибка:', err);
+        res.status(500).send('Ошибка сервера');
+    }
+});
+
+router.post('/:id/:calculationId/:structure/result', function(req, res, next) {
+
+});
 router.post('/:id/:calculationId/updateAddress', async function (req, res, next) {
 
     try{
@@ -126,11 +148,19 @@ router.post('/:id/:calculationId/saveCarcasData', async function (req, res, next
         }
 
         //const result = await calculation.recognizeAndCalculate(calculationId);
-        // const result = calculation.recognizeAndCalculate(data);
-        // if (result){
-        // }
+        const result = calculation.recognizeAndCalculate(data);
+        if (result){
+            try {
+                await queries.saveResults(result, calculationId);
+                res.json({ success: true, calculationId: calculationId, clientId });
+            } catch (error) {
+                console.error('Ошибка:', error);
+                res.status(500).send('Ошибка сервера');
+            }
 
-        res.json({ success: true, calculationId: calculationId });
+        }
+
+
         //const result = await queries.saveCalculationAddress(calculationId, address);
 
         // if (result.affectedRows > 0) {  // Если была добавлена хотя бы одна строка
