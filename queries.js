@@ -54,6 +54,32 @@ const addClient = async (secondname, name, lastname, phone, email, adress, manag
     );
     return results;
 };
+const getInsulations = async () => {
+    const thicknessList = await getListInsulationThickness();
+    let result = {};
+
+    for (const row of thicknessList) {
+        const [insulations] = await db.query(
+            `SELECT mc.*
+             FROM material_characteristics mc
+             JOIN materials m ON mc.materials_id = m.id
+             WHERE m.name = ? AND mc.thickness = ?`,
+            ['Утеплитель', row.thickness]
+        );
+
+        result[row.thickness] = insulations; // Сохраняем массив утеплителей по толщине
+    }
+
+    return result;
+}
+const getListInsulationThickness = async () => {
+    const [results] = await db.query(`SELECT DISTINCT mc.thickness
+                                      FROM material_characteristics mc
+                                               JOIN materials m ON mc.materials_id = m.id
+                                      WHERE m.name = ?;
+    `, ['Утеплитель']);
+    return results;
+}
 const saveSourceData = async (clientId, data) => {
     const connection = await db.getConnection();
     try {
@@ -436,6 +462,7 @@ module.exports = {
     getClients,
     getClientById,
     getUserByClientId,
+    getInsulations,
     getCalculations,
     getCalculationById,
     getStructuralElementFrameByCalculationId,

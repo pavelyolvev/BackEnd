@@ -43,14 +43,15 @@ router.get('/:id/:calculationId/:structure', async function (req, res, next) {
     try {
         const [client] = await queries.getClientById(clientId);
         const [calculation] = await queries.getCalculationById(calculationId);
+        const insulation = await queries.getInsulations();
         const floorsData = await queries.getStructuralElementFrameByCalculationId(calculationId);
 
         console.log(floorsData);
         if (client) {
             if(floorsData){
-                res.render(structure, {title: 'Редактирование структуры', client, calculation, floorsData: floorsData, operation:'update'});
+                res.render(structure, {title: 'Редактирование структуры', client, calculation, insulation, floorsData: floorsData, operation:'update'});
             } else {
-                res.render(structure, {title: 'Создание структуры', client, calculation, operation:'add'});
+                res.render(structure, {title: 'Создание структуры', client, calculation, insulation, operation:'add'});
             }
 
         } else {
