@@ -112,7 +112,7 @@ router.get('/:id/:calculationId/:structure/result', async function (req, res, ne
 router.post('/:id/:calculationId/:structure/result', function(req, res, next) {
 
 });
-router.post('/:id/:calculationId/:structure/updateAddress', async function (req, res, next) {
+router.post('/:id/:calculationId/updateAddress', async function (req, res, next) {
 
     try{
         const calculationId = req.params.calculationId;
