@@ -112,7 +112,7 @@ router.get('/:id/:calculationId/:structure/result', async function (req, res, ne
 router.post('/:id/:calculationId/:structure/result', function(req, res, next) {
 
 });
-router.post('/:id/:calculationId/updateAddress', async function (req, res, next) {
+router.post('/:id/:calculationId/:structure/updateAddress', async function (req, res, next) {
 
     try{
         const calculationId = req.params.calculationId;
@@ -148,6 +148,7 @@ router.post('/:id/:calculationId/saveCarcasData', async function (req, res, next
             // return res.json({ success: true, message: 'Данные успешно обновлены!' });
         }
 
+        const addressResult = await queries.saveCalculationAddress(calculationId, data.address);
         //const result = await calculation.recognizeAndCalculate(calculationId);
         const result = calculation.recognizeAndCalculate(data);
         if (result){
