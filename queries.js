@@ -207,7 +207,6 @@ const getStructuralElementFrameByCalculationId = async (calculationId) => {
       sef.calculation_id,
       sef.amount_floor,
       sef.floor_number,
-      sef.floor_number,
       sef.perimeter_of_external_walls,
       sef.base_area,
       sef.external_wall_thickness,
@@ -293,21 +292,30 @@ const saveResults = async (result, calculationId) => {
 
             // Внешние стены
             await saveMaterialToResults(connection, 'Доска', floor.outerWalls.woodForOuterWallVolume, floor.outerWalls.woodThickness, 'externalWall', structural_element_frame_id);
-            await saveMaterialToResults(connection, floor.outerWalls.insulationName, floor.outerWalls.insulationVolume, floor.outerWalls.insulationThickness, 'externalWall', structural_element_frame_id);
-            await saveMaterialToResults(connection, 'OSB', floor.outerWalls.sqOSB, floor.outerWalls.OSBThickness, 'externalWall', structural_element_frame_id);
-            await saveMaterialToResults(connection, floor.outerWalls.steamWaterProofName, floor.outerWalls.sqSteamWaterProofAndWindscreen, null, 'externalWall', structural_element_frame_id);
-            await saveMaterialToResults(connection, floor.outerWalls.windscreenName, floor.outerWalls.sqSteamWaterProofAndWindscreen, null, 'externalWall', structural_element_frame_id);
+
+            // далее опциональные материалы
+            if(floor.options.isExternalWallSheeting){
+                await saveMaterialToResults(connection, floor.outerWalls.insulationName, floor.outerWalls.insulationVolume, floor.outerWalls.insulationThickness, 'externalWall', structural_element_frame_id);
+                await saveMaterialToResults(connection, 'OSB', floor.outerWalls.sqOSB, floor.outerWalls.OSBThickness, 'externalWall', structural_element_frame_id);
+                await saveMaterialToResults(connection, floor.outerWalls.steamWaterProofName, floor.outerWalls.sqSteamWaterProofAndWindscreen, null, 'externalWall', structural_element_frame_id);
+                await saveMaterialToResults(connection, floor.outerWalls.windscreenName, floor.outerWalls.sqSteamWaterProofAndWindscreen, null, 'externalWall', structural_element_frame_id);
+            }
 
             // Внутренние стены
             await saveMaterialToResults(connection, 'Доска', floor.innerWalls.innerWallVolume, floor.innerWalls.innerWallThickness, 'internalWall', structural_element_frame_id);
-            await saveMaterialToResults(connection, 'OSB', floor.innerWalls.sqOSBInnerWall, floor.innerWalls.OSBThickness, 'internalWall', structural_element_frame_id);
+            if(floor.options.isInternalWallSheeting){
+                await saveMaterialToResults(connection, 'OSB', floor.innerWalls.sqOSBInnerWall, floor.innerWalls.OSBThickness, 'internalWall', structural_element_frame_id);
+            }
+
 
             // Перекрытия
-            await saveMaterialToResults(connection, 'Доска', floor.overlaps.woodVolume, floor.overlaps.woodThickness, 'overlaps', structural_element_frame_id);
-            await saveMaterialToResults(connection, floor.overlaps.insulationName, floor.overlaps.insulationVolume, floor.overlaps.insulationThickness, 'overlaps', structural_element_frame_id);
-            await saveMaterialToResults(connection, 'OSB', floor.overlaps.sqOSB, floor.overlaps.OSBThickness, 'overlaps', structural_element_frame_id);
-            await saveMaterialToResults(connection, floor.overlaps.steamWaterProofName, floor.overlaps.sqSteamWaterProofAndWindscreen, null, 'overlaps', structural_element_frame_id);
-            await saveMaterialToResults(connection, floor.overlaps.windscreenName, floor.overlaps.sqSteamWaterProofAndWindscreen, null, 'overlaps', structural_element_frame_id);
+            if(floor.options.isOverlaps){
+                await saveMaterialToResults(connection, 'Доска', floor.overlaps.woodVolume, floor.overlaps.woodThickness, 'overlaps', structural_element_frame_id);
+                await saveMaterialToResults(connection, floor.overlaps.insulationName, floor.overlaps.insulationVolume, floor.overlaps.insulationThickness, 'overlaps', structural_element_frame_id);
+                await saveMaterialToResults(connection, 'OSB', floor.overlaps.sqOSB, floor.overlaps.OSBThickness, 'overlaps', structural_element_frame_id);
+                await saveMaterialToResults(connection, floor.overlaps.steamWaterProofName, floor.overlaps.sqSteamWaterProofAndWindscreen, null, 'overlaps', structural_element_frame_id);
+                await saveMaterialToResults(connection, floor.overlaps.windscreenName, floor.overlaps.sqSteamWaterProofAndWindscreen, null, 'overlaps', structural_element_frame_id);
+            }
         }
 
         await connection.commit(); // Фиксируем изменения
