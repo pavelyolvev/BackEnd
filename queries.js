@@ -207,6 +207,7 @@ const getStructuralElementFrameByCalculationId = async (calculationId) => {
       sef.calculation_id,
       sef.amount_floor,
       sef.floor_number,
+      sef.floor_height,
       sef.perimeter_of_external_walls,
       sef.base_area,
       sef.external_wall_thickness,
@@ -267,12 +268,32 @@ const getStructuralElementFrameByCalculationId = async (calculationId) => {
     `;
     const [rows] = await db.query(query, [calculationId]);
 
-    const results = rows.map(row => ({
-        ...row,
-        windows: row.windows ?? [],
-        externalDoors: row.externalDoors ?? [],
-        internalDoors: row.internalDoors ?? [],
-    }));
+    const results = rows.map((row) => {
+        let isInternalWallSheeting = false;
+        let isExternalWallSheeting = false;
+        let isOverlaps = false;
+
+        if (row.OSB_internal_wall !== null)
+            isInternalWallSheeting = true;
+        if (row.OSB_external_wall !== null && row.steam_waterproofing_external_wall !== null &&
+            row.windscreen_extern_wall !== null && row.insulation_external_wall !== null)
+            isExternalWallSheeting = true;
+        if (row.overlap_thickness !== null && row.OSB_thickness !== null &&
+            row.steam_waterproofing_thickness !== null && row.windscreen_thickness !== null &&
+            row.insulation_thickness !== null)
+            isOverlaps = true;
+
+        const options = { isInternalWallSheeting, isExternalWallSheeting, isOverlaps };
+
+        return {
+            ...row,
+            windows: row.windows ?? [],
+            externalDoors: row.externalDoors ?? [],
+            internalDoors: row.internalDoors ?? [],
+            options
+        };
+    });
+
 
     //console.log(results);
 

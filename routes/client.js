@@ -48,10 +48,10 @@ router.get('/:id/:calculationId/:structure', async function (req, res, next) {
 
         console.log(floorsData);
         if (client) {
-            if(floorsData){
+            if(floorsData.length !== 0){
                 res.render(structure, {title: 'Редактирование структуры', client, calculation, insulation, floorsData: floorsData, operation:'update'});
             } else {
-                res.render(structure, {title: 'Создание структуры', client, calculation, insulation, operation:'add'});
+                res.render(structure, {title: 'Создание структуры', client, calculation, insulation,floorsData: floorsData, operation:'add'});
             }
 
         } else {
