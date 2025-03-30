@@ -101,62 +101,7 @@ const saveSourceData = async (clientId, data) => {
         const calculationId = calcResult.insertId;
 
         // 2. Loop through floors
-        for (const floor of data.floors) {
-            const [frameResult] = await connection.execute(
-                `INSERT INTO structural_element_frame (
-                    amount_floor, floor_number, floor_height, perimeter_of_external_walls,
-                    base_area, external_wall_thickness, internal_wall_length, internal_wall_thickness,
-                    OSB_external_wall, steam_waterproofing_external_wall, windscreen_extern_wall,
-                    insulation_external_wall, overlap_thickness, OSB_thickness,
-                    steam_waterproofing_thickness, windscreen_thickness, insulation_thickness, OSB_internal_wall,
-                    calculation_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [
-                    data.floors.length,
-                    floor.floorNumber,
-                    floor.height,
-                    floor.perimeter,
-                    floor.baseArea,
-                    floor.wallThickness,
-                    floor.innerWallLength,
-                    floor.innerWallThickness,
-                    floor.externalWallSheathing?.osb ?? null,
-                    floor.externalWallSheathing?.vaporBarrier ?? null,
-                    floor.externalWallSheathing?.windProtection ?? null,
-                    floor.externalWallSheathing?.insulation ?? null,
-                    floor.overlaps?.floorThickness ?? null,
-                    floor.overlaps?.osb ?? null,
-                    floor.overlaps?.vaporBarrier ?? null,
-                    floor.overlaps?.windProtection ?? null,
-                    floor.overlaps?.insulation ?? null,
-                    floor.innerWallSheathing?.osb ?? null,
-                    calculationId,
-                ]
-            );
-            const frameId = frameResult.insertId;
-
-            // Вставка окон и дверей
-            async function insertOpenings(openingsArray, type) {
-                for (const opening of openingsArray) {
-                    const [openingResult] = await connection.execute(
-                        `INSERT INTO openings (type, width, height) VALUES (?, ?, ?)`,
-                        [type, opening.width ?? null, opening.height ?? null]
-                    );
-
-                    const openingId = openingResult.insertId;
-
-                    await connection.execute(
-                        `INSERT INTO openings_in_a_structural_element_frame (structural_element_frame_id, openings_id, amount)
-                         VALUES (?, ?, ?)`,
-                        [frameId, openingId, opening.count]
-                    );
-                }
-            }
-
-            await insertOpenings(floor.windows, 'window');
-            await insertOpenings(floor.externalDoors, 'externalDoor');
-            await insertOpenings(floor.internalDoors, 'internalDoor');
-        }
+        await saveFloorsData(connection, data, calculationId);
 
         await connection.commit();
         console.log('Данные успешно добавлены.');
@@ -168,7 +113,112 @@ const saveSourceData = async (clientId, data) => {
         connection.release();
     }
 };
+async function saveFloorsData(connection, data, calculationId) {
+    for (const floor of data.floors) {
+        const [frameResult] = await connection.execute(
+            `INSERT INTO structural_element_frame (amount_floor, floor_number, floor_height,
+                                                   perimeter_of_external_walls,
+                                                   base_area, external_wall_thickness, internal_wall_length,
+                                                   internal_wall_thickness,
+                                                   OSB_external_wall, steam_waterproofing_external_wall,
+                                                   windscreen_extern_wall,
+                                                   insulation_external_wall, overlap_thickness, OSB_thickness,
+                                                   steam_waterproofing_thickness, windscreen_thickness,
+                                                   insulation_thickness, OSB_internal_wall,
+                                                   calculation_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                data.floors.length,
+                floor.floorNumber,
+                floor.height,
+                floor.perimeter,
+                floor.baseArea,
+                floor.wallThickness,
+                floor.innerWallLength,
+                floor.innerWallThickness,
+                floor.externalWallSheathing?.osb ?? null,
+                floor.externalWallSheathing?.vaporBarrier ?? null,
+                floor.externalWallSheathing?.windProtection ?? null,
+                floor.externalWallSheathing?.insulation ?? null,
+                floor.overlaps?.floorThickness ?? null,
+                floor.overlaps?.osb ?? null,
+                floor.overlaps?.vaporBarrier ?? null,
+                floor.overlaps?.windProtection ?? null,
+                floor.overlaps?.insulation ?? null,
+                floor.innerWallSheathing?.osb ?? null,
+                calculationId,
+            ]
+        );
+        const frameId = frameResult.insertId;
 
+        // Вставка окон и дверей
+        async function insertOpenings(openingsArray, type) {
+            for (const opening of openingsArray) {
+                const [openingResult] = await connection.execute(
+                    `INSERT INTO openings (type, width, height)
+                     VALUES (?, ?, ?)`,
+                    [type, opening.width ?? null, opening.height ?? null]
+                );
+
+                const openingId = openingResult.insertId;
+
+                await connection.execute(
+                    `INSERT INTO openings_in_a_structural_element_frame (structural_element_frame_id, openings_id, amount)
+                     VALUES (?, ?, ?)`,
+                    [frameId, openingId, opening.count]
+                );
+            }
+        }
+
+        await insertOpenings(floor.windows, 'window');
+        await insertOpenings(floor.externalDoors, 'externalDoor');
+        await insertOpenings(floor.internalDoors, 'internalDoor');
+    }
+}
+const updateSourceData = async (calculationId, data) => {
+    console.log('Обновляем данные...');
+    const connection = await db.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        // Удаляем все связанные записи
+        await connection.execute(
+            `DELETE FROM openings_in_a_structural_element_frame 
+         WHERE structural_element_frame_id IN (
+             SELECT id FROM structural_element_frame WHERE calculation_id = ?
+         )`,
+            [calculationId]
+        );
+
+        await connection.execute(
+            `DELETE FROM openings 
+         WHERE id IN (
+             SELECT openings_id FROM openings_in_a_structural_element_frame 
+             WHERE structural_element_frame_id IN (
+                 SELECT id FROM structural_element_frame WHERE calculation_id = ?
+             )
+         )`,
+            [calculationId]
+        );
+
+        await connection.execute(
+            `DELETE FROM structural_element_frame WHERE calculation_id = ?`,
+            [calculationId]
+        );
+
+        await saveFloorsData(connection, data, calculationId)
+
+        await connection.commit();
+        console.log('Данные обновлены успешно...');
+        return true;
+    } catch (err) {
+        await connection.rollback();
+        console.error('Ошибка во время обновления:', err);
+        return false;
+    } finally {
+        connection.release();
+    }
+}
 const getClientById = async (clientId) => {
     const [results] = await db.query('SELECT * FROM customers WHERE id = ?', [clientId]);
     return results;
@@ -299,9 +349,39 @@ const getStructuralElementFrameByCalculationId = async (calculationId) => {
 
     return results;
 }
-
-const saveResults = async (result, calculationId) => {
+const updateResults = async (result, calculationId, sefIds) => {
+    console.log('Обновляем результаты...');
     const connection = await db.getConnection(); // Получаем соединение
+    try {
+        await connection.beginTransaction(); // Начинаем транзакцию
+
+        console.log(calculationId)
+        sefIds.forEach(async (sefId) => {
+            await connection.execute(
+                `DELETE FROM results WHERE structural_element_frame_id = ?`,
+                [sefId]
+            );
+        });
+
+
+        await saveResults(result, calculationId, connection);
+
+        await connection.commit(); // Сохраняем изменения в базе данных
+        console.log('Результаты обновлены успешно...');
+    } catch (error) {
+        await connection.rollback(); // Откат изменений в случае ошибки
+        console.error("Ошибка при обновлении результатов, транзакция отменена:", error);
+        throw error;
+    } finally {
+        connection.release(); // Освобождаем соединение
+    }
+}
+const saveResults = async (result, calculationId, connected = null) => {
+
+    let connection;
+    if (connected == null)
+        connection = await db.getConnection(); // Получаем соединение
+    else connection = connected;
 
     const calculation = await getStructuralElementFrameByCalculationId(calculationId);
 
@@ -499,6 +579,8 @@ module.exports = {
     addCalculation,
     saveCalculationAddress,
     saveSourceData,
+    updateSourceData,
     saveResults,
+    updateResults,
     getResultsByCalculationId
 };

@@ -138,23 +138,34 @@ router.post('/:id/:calculationId/saveCarcasData', async function (req, res, next
         const clientId = req.params.id;
         const data = req.body;
         console.log(data);
-
+        let saveResult;
+        let dataBefore;
+        const sefIds = [];
         if(calculationId === 'new'){
             calculationId = await queries.saveSourceData(clientId, data);
-        } else {
-            // Реализовать обновление данных
-            // const result await queries.updateSourceData(clientId, data);
-            // if(result.affectedRows > 0){
-            // return res.json({ success: true, message: 'Данные успешно обновлены!' });
-        }
 
+        } else {
+            dataBefore = await queries.getStructuralElementFrameByCalculationId(calculationId)
+            dataBefore.forEach((element, index) => {
+                sefIds.push(element.id);
+            });
+            // Реализовать обновление данных
+            saveResult  = await queries.updateSourceData(calculationId, data);
+
+            if(!saveResult) {
+                return res.json({success: false, message: 'Не удалось обновить исходные данные'});
+            }
+        }
         const addressResult = await queries.saveCalculationAddress(calculationId, data.address);
+        const savedResults = await queries.getResultsByCalculationId(calculationId);
         const result = await calculation.recognizeAndCalculate(calculationId);
 
         //const result = calculation.recognizeAndCalculate(data);
         if (result){
             try {
-                await queries.saveResults(result, calculationId);
+                if(saveResult){
+                    await queries.updateResults(result, calculationId, sefIds);
+                } else await queries.saveResults(result, calculationId);
                 res.json({ success: true, calculationId: calculationId, clientId });
             } catch (error) {
                 console.error('Ошибка:', error);
