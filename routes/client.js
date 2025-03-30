@@ -19,8 +19,9 @@ router.get('/:id', async function (req, res, next) {
 
     try {
         const [client] = await queries.getClientById(clientId);
-        const calculations = await queries.getCalculations(clientId);
+        await queries.checkCalculationDate(clientId);
 
+        const calculations = await queries.getCalculations(clientId);
         console.log(calculations);
 
         if (client) {
@@ -99,9 +100,10 @@ router.get('/:id/:calculationId/:structure/result', async function (req, res, ne
     try {
         const [client] = await queries.getClientById(clientId);
         const [user] = await queries.getUserByClientId(clientId);
+        await queries.checkCalculationDate(clientId);
         const [calculation] = await queries.getCalculationById(calculationId);
-        const results = await queries.getResultsByCalculationId(calculationId);
 
+        const results = await queries.getResultsByCalculationId(calculationId);
         res.render('calculation', {client, calculation, results, user});
     } catch (err) {
         console.error('Ошибка:', err);

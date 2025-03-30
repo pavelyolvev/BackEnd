@@ -235,7 +235,7 @@ const getCalculations = async (clientId) => {
             calculation.customer_id,
             calculation.address_object_constractions,
             calculation.number,
-            calculation.created_date,
+            DATE_FORMAT(calculation.created_date, \'%d/%m/%Y\') AS created_date,
             calculation.calculation_state_id,
             calculation_state.status
         FROM calculation 
@@ -244,8 +244,32 @@ const getCalculations = async (clientId) => {
     `, [clientId]);
     return results;
 };
+const checkCalculationDate = async (clientId) => {
+    const connection = await db.getConnection(); // Получаем соединение
+    try {
+        await connection.beginTransaction(); // Начинаем транзакцию
+
+        // Обновляем все расчеты, созданные более 10 дней назад и находящиеся в статусе "актуальный" (calculation_state_id = 1)
+        const [result] = await connection.execute(`
+            UPDATE calculation
+            SET calculation_state_id = 2
+            WHERE customer_id = ?
+            AND calculation_state_id = 1
+            AND created_date <= NOW() - INTERVAL 10 DAY
+        `, [clientId]);
+
+        await connection.commit(); // Фиксируем изменения
+        console.log(`Расчеты успешно обновлены.`);
+    } catch (error) {
+        await connection.rollback(); // Откат изменений в случае ошибки
+        console.error("Ошибка при обновлении статусов расчетов:", error);
+        throw error;
+    } finally {
+        connection.release(); // Освобождаем соединение
+    }
+}
 const getCalculationById = async (calculationId) => {
-    const [results] = await db.query('SELECT * FROM calculation c join calculation_state cs on c.calculation_state_id = cs.id WHERE c.id = ?', [calculationId]);
+    const [results] = await db.query('SELECT c.id, c.customer_id, c.address_object_constractions, c.number, DATE_FORMAT(c.created_date, \'%d/%m/%Y\') AS created_date, cs.status FROM calculation c join calculation_state cs on c.calculation_state_id = cs.id WHERE c.id = ?', [calculationId]);
     return results;
 };
 const getStructuralElementFrameByCalculationId = async (calculationId) => {
@@ -639,6 +663,7 @@ module.exports = {
     getInsulations,
     getCalculations,
     getCalculationById,
+    checkCalculationDate,
     getStructuralElementFrameByCalculationId,
     addStructuralElementFrame,
     addCalculation,
