@@ -431,6 +431,71 @@ const saveResults = async (result, calculationId, connected = null) => {
     }
 };
 
+const updateResultsPrices = async (sefIds) => {
+    const connection = await db.getConnection(); // Получаем соединение
+    try {
+        await connection.beginTransaction(); // Начинаем транзакцию
+
+        for (const sefId of sefIds) {
+            // Получаем ВСЕ material_characteristics_id для sefId
+            const [rows] = await connection.execute(
+                `SELECT id, material_characteristics_id FROM results WHERE structural_element_frame_id = ?`,
+                [sefId]
+            );
+
+            if (rows.length === 0) continue; // Если нет данных, пропускаем
+
+            for (const row of rows) {
+                const { id, material_characteristics_id } = row;
+
+                // Получаем актуальную цену
+                const latestPrice = await getLatestPriceForMaterialByMCId(connection, material_characteristics_id);
+                if (latestPrice === null) {
+                    console.warn(`⚠️ Не найдена цена для material_characteristics_id: ${material_characteristics_id}`);
+                    continue;
+                }
+
+                // Обновляем price и full_price КОНКРЕТНОЙ строки results
+                await connection.execute(
+                    `UPDATE results 
+                     SET price = ?, 
+                         full_price = amount * ? 
+                     WHERE id = ?`,
+                    [latestPrice, latestPrice, id]
+                );
+            }
+        }
+
+        await connection.commit(); // Фиксируем изменения
+        console.log("✅ Все цены у записей успешно обновлены.");
+        return true;
+    } catch (error) {
+        await connection.rollback(); // Откат изменений в случае ошибки
+        console.error("❌ Ошибка при обновлении цен, транзакция отменена:", error);
+        throw error;
+    } finally {
+        connection.release(); // Освобождаем соединение
+    }
+};
+
+
+async function getLatestPriceForMaterialByMCId(connection, MCId){
+    let priceQuery = `
+        SELECT pl.selling_price
+        FROM price_lists pl
+        JOIN material_characteristics mc ON pl.material_characteristics_id = mc.id
+        WHERE mc.id = ? ORDER BY pl.date DESC
+            LIMIT 1;
+    `;
+
+    try {
+        const [rows] = await connection.query(priceQuery, [MCId]);
+        return rows.length > 0 ? rows[0].selling_price : null;
+    } catch (error) {
+        console.error(`Ошибка при получении цены для ${MCId}:`, error);
+        throw error;
+    }
+}
 
 async function getLatestPriceForMaterial(connection, name, width) {
     // запрос не учитывает длину доски
@@ -479,7 +544,7 @@ async function saveMaterialToResults(connection, name, amount, width, structural
     let query = `
         INSERT INTO results (material_characteristics_id, material, amount, price, measurement_unit_id, full_price,
                              structural_element_frame_id, structural_type)
-        SELECT mc.id, ?, ?, ?, ?, ?, ?, ?
+        SELECT mc.id, ?, ?, ?, mc.measurement_unit_id, ?, ?, ?
         FROM material_characteristics mc
         WHERE mc.name = ?
     `;
@@ -495,7 +560,7 @@ async function saveMaterialToResults(connection, name, amount, width, structural
 
 
     try {
-        const [rows] = await connection.query(query, [materialName, amount, price, 3, fullPrice, structural_element_frame_id, structuralType, name, width]);
+        const [rows] = await connection.query(query, [materialName, amount, price, fullPrice, structural_element_frame_id, structuralType, name, width]);
         console.log(`Запись успешно вставлена: ${materialName}`);
         return rows;
     } catch (error) {
@@ -582,5 +647,6 @@ module.exports = {
     updateSourceData,
     saveResults,
     updateResults,
+    updateResultsPrices,
     getResultsByCalculationId
 };

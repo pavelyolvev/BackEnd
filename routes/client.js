@@ -109,8 +109,31 @@ router.get('/:id/:calculationId/:structure/result', async function (req, res, ne
     }
 });
 
-router.post('/:id/:calculationId/:structure/result', function(req, res, next) {
+router.post('/:id/:calculationId/:structure/result/updatePrices', async function (req, res, next) {
+    const clientId = req.params.id;
+    const calculationId = req.params.calculationId;
 
+    try {
+        const [client] = await queries.getClientById(clientId);
+        const [user] = await queries.getUserByClientId(clientId);
+        const [calculation] = await queries.getCalculationById(calculationId);
+        const results = await queries.getResultsByCalculationId(calculationId);
+
+        const sefIds = [];
+        const sefData = await queries.getStructuralElementFrameByCalculationId(calculationId)
+        sefData.forEach((element, index) => {
+            sefIds.push(element.id);
+        });
+
+        const result = await queries.updateResultsPrices(sefIds);
+        if(result)
+            res.json({ success: true, message: 'Цены обновлены!' });
+        else res.json({ success: false, message: 'не удалось обновить цены.' });
+
+    } catch (err) {
+        console.error('Ошибка:', err);
+        res.status(500).send('Ошибка сервера');
+    }
 });
 router.post('/:id/:calculationId/updateAddress', async function (req, res, next) {
 
