@@ -4,6 +4,7 @@ const db = require('../db');
 const queries = require('../queries');
 const calculation = require('../calculation');
 
+
 /* GET home page. */
 router.get('/', async function (req, res, next) {
     try {
@@ -184,6 +185,7 @@ router.post('/:id/:calculationId/saveCarcasData', async function (req, res, next
         const addressResult = await queries.saveCalculationAddress(calculationId, data.address);
         const savedResults = await queries.getResultsByCalculationId(calculationId);
         const result = await calculation.recognizeAndCalculate(calculationId);
+        console.log(result);
 
         //const result = calculation.recognizeAndCalculate(data);
         if (result){

@@ -48,8 +48,8 @@ async function recognizeAndCalculate(calculationId) {
         });
 
         const numOfFloors = floor.floor_number === 1 ? 2 : 1;
-        const sqOuterWalls = floor.perimeter_of_external_walls * floor.base_area / 56;
-        const sqInnerWalls = floor.internal_wall_length * floor.base_area / 56;
+        const sqOuterWalls = floor.perimeter_of_external_walls * floor.floor_height;
+        const sqInnerWalls = floor.internal_wall_length * floor.floor_height;
 
         const woodForOuterHolders = Math.ceil(floor.perimeter_of_external_walls / 0.6 + 1);
         const woodForSq = floor.perimeter_of_external_walls * 2 / 3;
