@@ -112,7 +112,7 @@ router.get('/:id/:calculationId/:structure/result', async function (req, res, ne
     }
 });
 
-router.post('/:id/:calculationId/:structure/result/updatePrices', async function (req, res, next) {
+router.post('/:id/:calculationId/:structure/result/actualize', async function (req, res, next) {
     const clientId = req.params.id;
     const calculationId = req.params.calculationId;
 
@@ -129,9 +129,10 @@ router.post('/:id/:calculationId/:structure/result/updatePrices', async function
         });
 
         const result = await queries.updateResultsPrices(sefIds);
-        if(result)
-            res.json({ success: true, message: 'Цены обновлены!' });
-        else res.json({ success: false, message: 'не удалось обновить цены.' });
+        const result2 = await queries.updateCalculationDate(calculationId);
+        if(result && result2)
+            res.json({ success: true, message: 'Актуализация прошла успешно!' });
+        else res.json({ success: false, message: 'не удалось актуализировать.' });
 
     } catch (err) {
         console.error('Ошибка:', err);

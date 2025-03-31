@@ -220,7 +220,7 @@ const updateSourceData = async (calculationId, data) => {
     }
 }
 const getClientById = async (clientId) => {
-    const [results] = await db.query('SELECT * FROM customers WHERE id = ?', [clientId]);
+    const [results] = await db.query('SELECT *, `e-mail` AS email FROM customers WHERE id = ?', [clientId]);
     return results;
 };
 
@@ -270,6 +270,10 @@ const checkCalculationDate = async (clientId) => {
 }
 const getCalculationById = async (calculationId) => {
     const [results] = await db.query('SELECT c.id, c.customer_id, c.address_object_constractions, c.number, DATE_FORMAT(c.created_date, \'%d/%m/%Y\') AS created_date, cs.status FROM calculation c join calculation_state cs on c.calculation_state_id = cs.id WHERE c.id = ?', [calculationId]);
+    return results;
+};
+const updateCalculationDate = async (calculationId) => {
+    const [results] = await db.query('UPDATE calculation SET calculation_state_id = 1, created_date = NOW() WHERE id = ?', [calculationId]);
     return results;
 };
 const getStructuralElementFrameByCalculationId = async (calculationId) => {
@@ -663,6 +667,7 @@ module.exports = {
     getInsulations,
     getCalculations,
     getCalculationById,
+    updateCalculationDate,
     checkCalculationDate,
     getStructuralElementFrameByCalculationId,
     addStructuralElementFrame,
