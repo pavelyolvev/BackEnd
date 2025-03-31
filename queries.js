@@ -458,7 +458,72 @@ const saveResults = async (result, calculationId, connected = null) => {
         connection.release(); // Освобождаем соединение
     }
 };
+const deleteCustomers = async (clientId) => {
+    const connection = await db.getConnection(); // Получаем соединение
+    try {
+        await connection.beginTransaction();
 
+        const result = await getCalculations(clientId);
+        for (const [i, calculation] of result.entries()) {
+            await deleteCalculationById(calculation.id, connection);
+        }
+        await connection.query(`DELETE FROM customers WHERE id = ?`, [clientId]);
+
+        await connection.commit();
+        console.log(`Клиент с ID ${clientId} успешно удален`);
+        return true;
+    } catch (error) {
+        await connection.rollback();
+        console.error("Ошибка при удалении клиента:", error);
+        throw error;
+    } finally {
+        connection.release();
+    }
+}
+const deleteCalculationById = async (calculationId, connected = null) => {
+    let connection;
+    if (connected == null)
+        connection = await db.getConnection(); // Получаем соединение
+    else connection = connected;
+    try {
+        await connection.beginTransaction();
+
+        // Удаление результатов расчета
+        await connection.query(`
+            DELETE FROM results 
+            WHERE structural_element_frame_id IN (
+                SELECT id FROM structural_element_frame WHERE calculation_id = ?
+            )`, [calculationId]);
+
+        // Удаление связей между openings и structural_element_frame
+        await connection.query(`
+            DELETE FROM openings_in_a_structural_element_frame 
+            WHERE structural_element_frame_id IN (
+                SELECT id FROM structural_element_frame WHERE calculation_id = ?
+            )`, [calculationId]);
+
+        // Удаление записей openings, если они не используются в других расчетах
+        await connection.query(`
+            DELETE FROM openings 
+            WHERE id NOT IN (SELECT openings_id FROM openings_in_a_structural_element_frame)`);
+
+        // Удаление структурных элементов (каркаса)
+        await connection.query(`DELETE FROM structural_element_frame WHERE calculation_id = ?`, [calculationId]);
+
+        // Удаление самого расчета
+        await connection.query(`DELETE FROM calculation WHERE id = ?`, [calculationId]);
+
+        await connection.commit();
+        console.log(`Расчет с ID ${calculationId} успешно удален`);
+        return true;
+    } catch (error) {
+        await connection.rollback();
+        console.error("Ошибка при удалении расчета:", error);
+        throw error;
+    } finally {
+        connection.release();
+    }
+};
 const updateResultsPrices = async (sefIds) => {
     const connection = await db.getConnection(); // Получаем соединение
     try {
@@ -669,6 +734,8 @@ module.exports = {
     getCalculationById,
     updateCalculationDate,
     checkCalculationDate,
+    deleteCalculationById,
+    deleteCustomers,
     getStructuralElementFrameByCalculationId,
     addStructuralElementFrame,
     addCalculation,

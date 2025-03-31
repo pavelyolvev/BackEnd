@@ -36,6 +36,24 @@ router.get('/:id', async function (req, res, next) {
     }
 });
 
+router.get('/:id/deleteCalculation/:calculationId', async function (req, res, next) {
+    const clientId = req.params.id;
+    const calculationId = req.params.calculationId;
+
+    try {
+        const result = await queries.deleteCalculationById(calculationId);
+
+        if (result) {
+            res.json({ success: true, message: 'Расчет успешно удален.' });
+        } else {
+            res.json({ success: false, message: 'Не удалось удалить расчет.' });
+        }
+    } catch (err) {
+        console.error('Ошибка:', err);
+        res.status(500).send('Ошибка сервера');
+    }
+});
+
 router.get('/:id/:calculationId/:structure', async function (req, res, next) {
     const clientId = req.params.id;
     const calculationId = req.params.calculationId;
