@@ -72,6 +72,23 @@ router.get('/:id/duplicateCalculation/:calculationId', async function (req, res,
         res.status(500).send('Ошибка сервера');
     }
 });
+
+router.get('/:id/deleteCustomer', async function (req, res, next) {
+    const clientId = req.params.id;
+
+    try {
+        const result = await queries.deleteCustomer(clientId);
+
+        if (result) {
+            res.json({ success: true, message: 'Клиент успешно удален.' });
+        } else {
+            res.json({ success: false, message: 'Не удалось удалить клиента.' });
+        }
+    } catch (err) {
+        console.error('Ошибка:', err);
+        res.status(500).send('Ошибка сервера');
+    }
+});
 router.get('/:id/deleteCalculation/:calculationId', async function (req, res, next) {
     const clientId = req.params.id;
     const calculationId = req.params.calculationId;

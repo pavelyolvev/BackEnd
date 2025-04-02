@@ -562,14 +562,17 @@ const saveResults = async (result, calculationId, connected = null) => {
         connection.release(); // Освобождаем соединение
     }
 };
-const deleteCustomers = async (clientId) => {
+const deleteCustomer = async (clientId) => {
     const connection = await db.getConnection(); // Получаем соединение
     try {
         await connection.beginTransaction();
 
         const result = await getCalculations(clientId);
+        console.log(`Найдено расчетов для клиента ${clientId}:`, result.length);
+
         for (const [i, calculation] of result.entries()) {
-            await deleteCalculationById(calculation.id, connection);
+            console.log(`Удаление расчета с ID: ${calculation.calculation_id}`);
+            await deleteCalculationById(calculation.calculation_id, connection);
         }
         await connection.query(`DELETE FROM customers WHERE id = ?`, [clientId]);
 
@@ -842,7 +845,7 @@ module.exports = {
     updateCalculationState,
     checkCalculationDate,
     deleteCalculationById,
-    deleteCustomers,
+    deleteCustomer,
     getStructuralElementFrameByCalculationId,
     addStructuralElementFrame,
     addCalculation,
