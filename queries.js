@@ -136,23 +136,23 @@ async function saveFloorsData(connection, data, calculationId) {
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 data.floors.length,
-                floor.floorNumber,
-                floor.height,
-                floor.perimeter,
-                floor.baseArea,
-                floor.wallThickness,
-                floor.innerWallLength,
-                floor.innerWallThickness,
-                floor.externalWallSheathing?.osb ?? null,
-                floor.externalWallSheathing?.vaporBarrier ?? null,
-                floor.externalWallSheathing?.windProtection ?? null,
-                floor.externalWallSheathing?.insulation ?? null,
-                floor.overlaps?.floorThickness ?? null,
-                floor.overlaps?.osb ?? null,
-                floor.overlaps?.vaporBarrier ?? null,
-                floor.overlaps?.windProtection ?? null,
-                floor.overlaps?.insulation ?? null,
-                floor.innerWallSheathing?.osb ?? null,
+                floor.floor_number,
+                floor.floor_height,
+                floor.perimeter_of_external_walls,
+                floor.base_area,
+                floor.external_wall_thickness,
+                floor.internal_wall_length,
+                floor.internal_wall_thickness,
+                floor.OSB_external_wall ?? null,
+                floor.steam_waterproofing_external_wall ?? null,
+                floor.windscreen_extern_wall ?? null,
+                floor.insulation_external_wall ?? null,
+                floor.overlap_thickness ?? null,
+                floor.OSB_thickness ?? null,
+                floor.steam_waterproofing_thickness ?? null,
+                floor.windscreen_thickness ?? null,
+                floor.insulation_thickness ?? null,
+                floor.OSB_internal_wall ?? null,
                 calculationId,
             ]
         );
@@ -172,7 +172,7 @@ async function saveFloorsData(connection, data, calculationId) {
                 await connection.execute(
                     `INSERT INTO openings_in_a_structural_element_frame (structural_element_frame_id, openings_id, amount)
                      VALUES (?, ?, ?)`,
-                    [frameId, openingId, opening.count]
+                    [frameId, openingId, opening.amount]
                 );
             }
         }
