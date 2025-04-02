@@ -87,10 +87,13 @@ const saveSourceData = async (clientId, data) => {
 
         // 1. Insert into calculation - работает
         const [countResult] = await connection.query(
-            `SELECT COUNT(*) AS count FROM calculation WHERE customer_id = ?`,
+            `SELECT number AS lastNumber FROM calculation WHERE customer_id = ? ORDER BY number DESC LIMIT 1`,
             [clientId]
         );
-        const number = countResult[0].count + 1;
+        let number;
+        if (countResult.length === 0) {
+            number = 1;
+        } else number = countResult[0].lastNumber + 1;
 
         const [calcResult] = await connection.execute(
             `INSERT INTO calculation (customer_id, address_object_constractions, number, created_date, calculation_state_id)
