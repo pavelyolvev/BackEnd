@@ -251,6 +251,99 @@ const getCalculations = async (clientId) => {
     `, [clientId]);
     return results;
 };
+const duplicateCalculationById = async (clientId, calculationId) => {
+    const connection = await db.getConnection();
+    try {
+        await connection.beginTransaction(); // Начинаем транзакцию
+
+        // 1️⃣ Получаем данные текущего расчета
+        const [originalCalculation] = await connection.query(
+            `SELECT address_object_constractions, number FROM calculation WHERE id = ?`,
+            [calculationId]
+        );
+
+        if (originalCalculation.length === 0) {
+            throw new Error('Расчет не найден');
+        }
+
+        // 2️⃣ Получаем все каркасы, привязанные к расчету
+        const [frames] = await connection.query(
+            `SELECT * FROM structural_element_frame WHERE calculation_id = ?`,
+            [calculationId]
+        );
+
+        // 3️⃣ Формируем объект `data` в формате `saveSourceData`
+        let data = {
+            address: originalCalculation[0].address_object_constractions,
+            floors: [],
+        };
+
+        for (const frame of frames) {
+            // Получаем окна и двери для текущего каркаса
+            const [openingsLinks] = await connection.query(
+                `SELECT o.id, o.type, o.width, o.height, osef.amount 
+                 FROM openings_in_a_structural_element_frame osef
+                 JOIN openings o ON osef.openings_id = o.id
+                 WHERE osef.structural_element_frame_id = ?`,
+                [frame.id]
+            );
+
+            let windows = [];
+            let externalDoors = [];
+            let internalDoors = [];
+
+            for (const opening of openingsLinks) {
+                if (opening.type === 'window') windows.push({ width: opening.width, height: opening.height, count: opening.amount });
+                if (opening.type === 'externalDoor') externalDoors.push({ width: opening.width, height: opening.height, count: opening.amount });
+                if (opening.type === 'internalDoor') internalDoors.push({ width: opening.width, height: opening.height, count: opening.amount });
+            }
+
+            data.floors.push({
+                floorNumber: frame.floor_number,
+                height: frame.floor_height,
+                perimeter: frame.perimeter_of_external_walls,
+                baseArea: frame.base_area,
+                wallThickness: frame.external_wall_thickness,
+                innerWallLength: frame.internal_wall_length,
+                innerWallThickness: frame.internal_wall_thickness,
+                externalWallSheathing: {
+                    osb: frame.OSB_external_wall,
+                    vaporBarrier: frame.steam_waterproofing_external_wall,
+                    windProtection: frame.windscreen_extern_wall,
+                    insulation: frame.insulation_external_wall,
+                },
+                overlaps: {
+                    floorThickness: frame.overlap_thickness,
+                    osb: frame.OSB_thickness,
+                    vaporBarrier: frame.steam_waterproofing_thickness,
+                    windProtection: frame.windscreen_thickness,
+                    insulation: frame.insulation_thickness,
+                },
+                innerWallSheathing: {
+                    osb: frame.OSB_internal_wall,
+                },
+                windows,
+                externalDoors,
+                internalDoors,
+            });
+        }
+
+        // 4️⃣ Используем `saveSourceData`, чтобы создать копию
+        const newCalculationId = await saveSourceData(clientId, data);
+
+        await connection.commit(); // Фиксируем изменения
+        console.log('Расчет успешно дублирован.');
+        return newCalculationId;
+    } catch (err) {
+        await connection.rollback();
+        console.error('Ошибка во время дублирования:', err);
+        return false;
+    } finally {
+        connection.release();
+    }
+};
+
+
 const updateCalculationState = async (calculationId, newStateId) => {
     const [results] = await db.query('UPDATE calculation SET calculation_state_id = ? WHERE id = ?', [newStateId, calculationId]);
     return results;
@@ -555,7 +648,7 @@ const updateResultsPrices = async (sefIds) => {
                 // Получаем актуальную цену
                 const latestPrice = await getLatestPriceForMaterialByMCId(connection, material_characteristics_id);
                 if (latestPrice === null) {
-                    console.warn(`⚠️ Не найдена цена для material_characteristics_id: ${material_characteristics_id}`);
+                    console.warn(`Не найдена цена для material_characteristics_id: ${material_characteristics_id}`);
                     continue;
                 }
 
@@ -571,11 +664,11 @@ const updateResultsPrices = async (sefIds) => {
         }
 
         await connection.commit(); // Фиксируем изменения
-        console.log("✅ Все цены у записей успешно обновлены.");
+        console.log("Все цены у записей успешно обновлены.");
         return true;
     } catch (error) {
         await connection.rollback(); // Откат изменений в случае ошибки
-        console.error("❌ Ошибка при обновлении цен, транзакция отменена:", error);
+        console.error("Ошибка при обновлении цен, транзакция отменена:", error);
         throw error;
     } finally {
         connection.release(); // Освобождаем соединение
@@ -744,6 +837,7 @@ module.exports = {
     getInsulations,
     getCalculations,
     getCalculationById,
+    duplicateCalculationById,
     updateCalculationDate,
     updateCalculationState,
     checkCalculationDate,

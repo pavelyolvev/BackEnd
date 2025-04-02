@@ -52,7 +52,26 @@ router.post('/:id/update', async function (req, res, next) {
         res.status(500).send('Ошибка сервера');
     }
 });
+router.get('/:id/duplicateCalculation/:calculationId', async function (req, res, next) {
+    const clientId = req.params.id;
+    const calculationId = req.params.calculationId;
 
+    try {
+        const duplicatedCalcId = await queries.duplicateCalculationById(clientId, calculationId);
+
+
+        if (duplicatedCalcId) {
+            const result = await calculation.recognizeAndCalculate(calculationId);
+            await queries.saveResults(result, duplicatedCalcId);
+            res.json({ success: true, message: 'Расчет успешно дублирован.' });
+        } else {
+            res.json({ success: false, message: 'Не удалось дублировать расчет.' });
+        }
+    } catch (err) {
+        console.error('Ошибка:', err);
+        res.status(500).send('Ошибка сервера');
+    }
+});
 router.get('/:id/deleteCalculation/:calculationId', async function (req, res, next) {
     const clientId = req.params.id;
     const calculationId = req.params.calculationId;
