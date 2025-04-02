@@ -122,6 +122,7 @@ const saveSourceData = async (clientId, data) => {
 };
 async function saveFloorsData(connection, data, calculationId) {
     for (const floor of data.floors) {
+        console.log(floor);
         const [frameResult] = await connection.execute(
             `INSERT INTO structural_element_frame (amount_floor, floor_number, floor_height,
                                                    perimeter_of_external_walls,
@@ -267,11 +268,12 @@ const duplicateCalculationById = async (clientId, calculationId) => {
         }
 
         // 2️⃣ Получаем все каркасы, привязанные к расчету
-        const [frames] = await connection.query(
-            `SELECT * FROM structural_element_frame WHERE calculation_id = ?`,
-            [calculationId]
-        );
+        // const [frames] = await connection.query(
+        //     `SELECT * FROM structural_element_frame WHERE calculation_id = ?`,
+        //     [calculationId]
+        // );
 
+        const frames = await getStructuralElementFrameByCalculationId(calculationId);
         // 3️⃣ Формируем объект `data` в формате `saveSourceData`
         let data = {
             address: originalCalculation[0].address_object_constractions,
@@ -293,35 +295,29 @@ const duplicateCalculationById = async (clientId, calculationId) => {
             let internalDoors = [];
 
             for (const opening of openingsLinks) {
-                if (opening.type === 'window') windows.push({ width: opening.width, height: opening.height, count: opening.amount });
-                if (opening.type === 'externalDoor') externalDoors.push({ width: opening.width, height: opening.height, count: opening.amount });
-                if (opening.type === 'internalDoor') internalDoors.push({ width: opening.width, height: opening.height, count: opening.amount });
+                if (opening.type === 'window') windows.push({ width: opening.width, height: opening.height, amount: opening.amount });
+                if (opening.type === 'externalDoor') externalDoors.push({ width: opening.width, height: opening.height, amount: opening.amount });
+                if (opening.type === 'internalDoor') internalDoors.push({ width: opening.width, height: opening.height, amount: opening.amount });
             }
 
             data.floors.push({
-                floorNumber: frame.floor_number,
-                height: frame.floor_height,
-                perimeter: frame.perimeter_of_external_walls,
-                baseArea: frame.base_area,
-                wallThickness: frame.external_wall_thickness,
-                innerWallLength: frame.internal_wall_length,
-                innerWallThickness: frame.internal_wall_thickness,
-                externalWallSheathing: {
-                    osb: frame.OSB_external_wall,
-                    vaporBarrier: frame.steam_waterproofing_external_wall,
-                    windProtection: frame.windscreen_extern_wall,
-                    insulation: frame.insulation_external_wall,
-                },
-                overlaps: {
-                    floorThickness: frame.overlap_thickness,
-                    osb: frame.OSB_thickness,
-                    vaporBarrier: frame.steam_waterproofing_thickness,
-                    windProtection: frame.windscreen_thickness,
-                    insulation: frame.insulation_thickness,
-                },
-                innerWallSheathing: {
-                    osb: frame.OSB_internal_wall,
-                },
+                floor_number: frame.floor_number,
+                floor_height: frame.floor_height,
+                perimeter_of_external_walls: frame.perimeter_of_external_walls,
+                base_area: frame.base_area,
+                external_wall_thickness: frame.external_wall_thickness,
+                internal_wall_length: frame.internal_wall_length,
+                internal_wall_thickness: frame.internal_wall_thickness,
+                OSB_external_wall: frame.OSB_external_wall,
+                steam_waterproofing_external_wall: frame.steam_waterproofing_external_wall,
+                windscreen_extern_wall: frame.windscreen_extern_wall,
+                insulation_external_wall: frame.insulation_external_wall,
+                overlap_thickness: frame.overlap_thickness,
+                OSB_thickness: frame.OSB_thickness,
+                steam_waterproofing_thickness: frame.steam_waterproofing_thickness,
+                windscreen_thickness: frame.windscreen_thickness,
+                insulation_thickness: frame.insulation_thickness,
+                OSB_internal_wall: frame.OSB_internal_wall,
                 windows,
                 externalDoors,
                 internalDoors,
