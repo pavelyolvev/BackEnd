@@ -35,6 +35,23 @@ router.get('/:id', async function (req, res, next) {
         res.status(500).send('Ошибка сервера');
     }
 });
+router.post('/:id/update', async function (req, res, next) {
+    const clientId = req.params.id;
+
+    const data = req.body;
+    try {
+        const result = await queries.updateClient(clientId, data);
+
+        if (result.affectedRows > 0) {
+            res.json({ success: true, message: 'Данные клиента успешно обновлены.' });
+        } else {
+            res.json({ success: false, message: 'Не удалось обновить данные клиента.' });
+        }
+    } catch (err) {
+        console.error('Ошибка:', err);
+        res.status(500).send('Ошибка сервера');
+    }
+});
 
 router.get('/:id/deleteCalculation/:calculationId', async function (req, res, next) {
     const clientId = req.params.id;
@@ -152,6 +169,20 @@ router.post('/:id/:calculationId/:structure/result/actualize', async function (r
             res.json({ success: true, message: 'Актуализация прошла успешно!' });
         else res.json({ success: false, message: 'не удалось актуализировать.' });
 
+    } catch (err) {
+        console.error('Ошибка:', err);
+        res.status(500).send('Ошибка сервера');
+    }
+});
+router.post('/:id/:calculationId/:structure/result/setDocumentStatus', async function (req, res, next) {
+    const clientId = req.params.id;
+    const calculationId = req.params.calculationId;
+
+    try {
+        const result = await queries.updateCalculationState(calculationId, 3);
+        if(result)
+            res.json({ success: true, message: 'Обновление статуса прошло успешно!' });
+        else res.json({ success: false, message: 'не удалось обновить статус.' });
     } catch (err) {
         console.error('Ошибка:', err);
         res.status(500).send('Ошибка сервера');

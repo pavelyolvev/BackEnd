@@ -54,6 +54,10 @@ const addClient = async (secondname, name, lastname, phone, email, adress, manag
     );
     return results;
 };
+const updateClient = async (clientId, data) =>{
+    const [results] = await db.query('UPDATE customers SET last_name = ?, first_name = ?, second_name = ?, phone = ?, `e-mail` = ?, adress = ? WHERE id = ?', [data.lastName, data.firstName, data.middleName, data.phone, data.email, data.address, clientId]);
+    return results;
+};
 const getInsulations = async () => {
     const thicknessList = await getListInsulationThickness();
     let result = {};
@@ -247,6 +251,10 @@ const getCalculations = async (clientId) => {
     `, [clientId]);
     return results;
 };
+const updateCalculationState = async (calculationId, newStateId) => {
+    const [results] = await db.query('UPDATE calculation SET calculation_state_id = ? WHERE id = ?', [newStateId, calculationId]);
+    return results;
+}
 const checkCalculationDate = async (clientId) => {
     const connection = await db.getConnection(); // Получаем соединение
     try {
@@ -729,6 +737,7 @@ const saveCalculationAddress = async (calculationId, address) => {
 module.exports = {
     login,
     addClient,
+    updateClient,
     getClients,
     getClientById,
     getUserByClientId,
@@ -736,6 +745,7 @@ module.exports = {
     getCalculations,
     getCalculationById,
     updateCalculationDate,
+    updateCalculationState,
     checkCalculationDate,
     deleteCalculationById,
     deleteCustomers,
