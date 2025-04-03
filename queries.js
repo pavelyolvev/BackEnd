@@ -47,6 +47,10 @@ const getClients = async (manager_id) => {
     const [results] = await db.query('SELECT * FROM customers WHERE users_id = ?', [manager_id]);
     return results;
 };
+const isClientOfManager = async (userId, clientId) => {
+    const [results] = await db.query('SELECT * FROM customers WHERE id = ? AND users_id = ?', [clientId, userId]);
+    return results.length > 0;
+}
 const addClient = async (secondname, name, lastname, phone, email, adress, manager_id) => {
     const [results] = await db.query(
         'INSERT INTO customers (last_name, first_name, second_name, phone, `e-mail`, adress, users_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
@@ -825,12 +829,23 @@ const saveCalculationAddress = async (calculationId, address) => {
     const [results] = await db.query('UPDATE calculation SET address_object_constractions = ? WHERE id = ?', [address, calculationId]);
     return results
 }
+const checkClientExists = async (phone, email) =>{
+    const [result] = await db.query(`SELECT phone, \`e-mail\` AS email FROM customers WHERE phone = ? OR \`e-mail\` = ?`, [phone, email]);
+    if (result.length === 0)
+        return false; // такого телефона или email нет в базе
+    if (result[0].phone === phone)
+        return 'phone';
+    if (result[0].email === email)
+        return 'email';
+}
 
 module.exports = {
     login,
     addClient,
     updateClient,
     getClients,
+    checkClientExists,
+    isClientOfManager,
     getClientById,
     getUserByClientId,
     getInsulations,

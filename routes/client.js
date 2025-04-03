@@ -21,7 +21,11 @@ router.get('/', async function (req, res, next) {
 });
 router.get('/:id', async function (req, res, next) {
     const clientId = req.params.id;
-
+    if (!req.session.manager_id) {
+        return res.status(401).send('Не авторизован');
+    }
+    if (!(await queries.isClientOfManager(req.session.manager_id, clientId)))
+        return res.status(403).send('Доступ запрещен');
     try {
         const [client] = await queries.getClientById(clientId);
         await queries.checkCalculationDate(clientId);
@@ -303,6 +307,21 @@ router.post('/:id/:calculationId/saveCarcasData', async function (req, res, next
         console.error('Ошибка:', err);
         res.status(500).send('Ошибка сервера');
     }
+});
+
+router.post('/check-exists', async (req, res) => {
+    try{
+        const {phone, email} = req.body;
+        const result = await queries.checkClientExists(phone, email);
+
+        if(typeof result === 'boolean')
+            res.json({exists: false});
+        else res.json({exists: true, field: result});
+    } catch (err) {
+        console.error('Ошибка:', err);
+        res.status(500).send('Ошибка сервера');
+    }
+
 });
 router.post('/add', async (req, res) => {
     try{
