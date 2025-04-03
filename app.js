@@ -3,6 +3,7 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+const session = require('express-session');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -13,6 +14,12 @@ var apiRouter = require('./routes/api');
 
 var app = express();
 
+app.use(session({
+  secret: 'Go3jt54ldf', // Храни в .env
+  resave: false,
+  saveUninitialized: true,
+  cookie: { secure: false } // true, если HTTPS
+}));
 // Настройка EJS
 app.set('views', path.join(__dirname, '../FrontEnd/views'));
 app.set('view engine', 'ejs');
@@ -39,5 +46,7 @@ app.use(function(err, req, res, next) {
   res.status(err.status || 500);
   res.render('error');
 });
+
+
 
 module.exports = app;

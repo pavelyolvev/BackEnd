@@ -20,6 +20,7 @@ router.post('/', async (req, res) => {
     console.log(results);
 
     if (results.length > 0) {
+        req.session.manager_id = results[0].id; // Сохраняем manager_id в сессию
         res.json({ success: true, message: 'Успешный вход', user: results[0] });
     } else {
         res.json({ success: false, message: 'Неверный логин или пароль' });

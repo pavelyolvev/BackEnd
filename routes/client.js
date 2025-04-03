@@ -8,7 +8,11 @@ const calculation = require('../calculation');
 /* GET home page. */
 router.get('/', async function (req, res, next) {
     try {
-        const clients = await queries.getClients(1);  // Передаем manager_id, например, 1
+        if (!req.session.manager_id) {
+            return res.status(401).send('Не авторизован');
+        }
+
+        const clients = await queries.getClients(req.session.manager_id);
         res.render('client', { title: 'client', clients });
     } catch (err) {
         console.error('Ошибка:', err);
