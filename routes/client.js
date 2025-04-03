@@ -9,7 +9,7 @@ const calculation = require('../calculation');
 router.get('/', async function (req, res, next) {
     try {
         if (!req.session.manager_id) {
-            return res.status(401).send('Не авторизован');
+            res.render('error', { message: 'Для доступа к странице авторизуйтесь.', statusCode: 401 });
         }
 
         const clients = await queries.getClients(req.session.manager_id);
@@ -22,10 +22,16 @@ router.get('/', async function (req, res, next) {
 router.get('/:id', async function (req, res, next) {
     const clientId = req.params.id;
     if (!req.session.manager_id) {
-        return res.status(401).send('Не авторизован');
+        //return res.status(401).send('Не авторизован');
+        res.render('error', { error: 'Пользователь не авторизован', message: 'Для доступа к странице авторизуйтесь.', statusCode: 401 });
+        return;
     }
-    if (!(await queries.isClientOfManager(req.session.manager_id, clientId)))
-        return res.status(403).send('Доступ запрещен');
+    if (!(await queries.isClientOfManager(req.session.manager_id, clientId))){
+        res.render('error', { error: 'Доступ запрещен', message: 'Доступ к запрошенным данным запрещен', statusCode: 403 });
+        return;
+        //return res.status(403).send('Доступ запрещен');
+    }
+        console.log('МЕНДЖЕР ПРОШЕЛ ПРОВЕРКУ')
     try {
         const [client] = await queries.getClientById(clientId);
         await queries.checkCalculationDate(clientId);
