@@ -829,15 +829,25 @@ const saveCalculationAddress = async (calculationId, address) => {
     const [results] = await db.query('UPDATE calculation SET address_object_constractions = ? WHERE id = ?', [address, calculationId]);
     return results
 }
-const checkClientExists = async (phone, email) =>{
-    const [result] = await db.query(`SELECT phone, \`e-mail\` AS email FROM customers WHERE phone = ? OR \`e-mail\` = ?`, [phone, email]);
-    if (result.length === 0)
-        return false; // такого телефона или email нет в базе
-    if (result[0].phone === phone)
-        return 'phone';
-    if (result[0].email === email)
-        return 'email';
-}
+const checkClientExists = async (clientId, phone, email) => {
+    const [result] = await db.query(
+        `SELECT id, phone, \`e-mail\` AS email FROM customers WHERE phone = ? OR \`e-mail\` = ?`,
+        [phone, email]
+    );
+
+    if (!result.length) return null;
+
+    for (const client of result) {
+        // Если clientId передан и это тот же клиент — пропускаем
+        if (clientId !== null && client.id === clientId) continue;
+
+        if (client.phone === phone) return 'phone';
+        if (client.email === email) return 'email';
+    }
+
+    return null;
+};
+
 
 module.exports = {
     login,

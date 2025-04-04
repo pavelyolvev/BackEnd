@@ -53,6 +53,7 @@ router.post('/:id/update', async function (req, res, next) {
     const clientId = req.params.id;
 
     const data = req.body;
+    console.log(data);
     try {
         const result = await queries.updateClient(clientId, data);
 
@@ -317,10 +318,12 @@ router.post('/:id/:calculationId/saveCarcasData', async function (req, res, next
 
 router.post('/check-exists', async (req, res) => {
     try{
-        const {phone, email} = req.body;
-        const result = await queries.checkClientExists(phone, email);
+        const {clientId, phone, email} = req.body;
+        console.log(clientId);
+        const result = await queries.checkClientExists(clientId, phone, email);
 
-        if(typeof result === 'boolean')
+        console.log(result);
+        if(result === null)
             res.json({exists: false});
         else res.json({exists: true, field: result});
     } catch (err) {
