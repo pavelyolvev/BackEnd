@@ -3,7 +3,7 @@ var router = express.Router();
 const db = require('../db');
 const queries = require('../queries');
 const PDFDocument = require('pdfkit');
-const pdf = require('html-pdf');
+const puppeteer = require('puppeteer');
 const fs = require('fs');
 const path = require('path');
 
@@ -66,8 +66,8 @@ async function generateContractPDF(client, calculation, structuralElements, resu
             th { background-color: #f2f2f2; }
             .subcategory { font-weight: bold; background-color: #e6e6e6; }
             .total { font-weight: bold; background-color: #d9edf7; text-align: right; }
-            p {font-size: 20px;}
-            label {font-size: 20px;}
+            p {font-size: 14px;}
+            label {font-size: 14px;}
         </style>
     </head>
     <body>
@@ -235,23 +235,26 @@ ${Array.isArray(el.externalDoors) && el.externalDoors.length > 0 ? `
 
 
     const contractsDir = path.join(__dirname, '../contracts');
-    if (!fs.existsSync(contractsDir)) {
-        fs.mkdirSync(contractsDir, { recursive: true });
-    }
+    if (!fs.existsSync(contractsDir)) fs.mkdirSync(contractsDir, { recursive: true });
 
     const filePath = path.join(contractsDir, `contract_${Date.now()}.pdf`);
 
-    return new Promise((resolve, reject) => {
-        pdf.create(html).toFile(filePath, (err, res) => {
-            if (err) {
-                console.error("Ошибка при создании PDF:", err);
-                reject(err);
-            } else {
-                console.log("PDF создан:", res.filename);
-                resolve(res.filename);
-            }
+    try {
+        const browser = await puppeteer.launch({
+            headless: 'new',
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
-    });
+        const page = await browser.newPage();
+        await page.setContent(html, { waitUntil: 'networkidle0' });
+        await page.pdf({ path: filePath, format: 'A4', printBackground: true });
+        await browser.close();
+
+        console.log('PDF создан:', filePath);
+        return filePath;
+    } catch (err) {
+        console.error('Ошибка при создании PDF:', err);
+        throw err;
+    }
 }
 
 

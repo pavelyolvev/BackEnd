@@ -10,15 +10,8 @@ router.get('/', function(req, res, next) {
 router.post('/', async (req, res) => {
 
     const { login, password } = req.body;
-
-    //const login = "ivanov";
-    //const password = "password";
-
-
     const results = await queries.login(login, password);
-
     console.log(results);
-
     if (results.length > 0) {
         req.session.manager_id = results[0].id; // Сохраняем manager_id в сессию
         res.json({ success: true, message: 'Успешный вход', user: results[0] });
